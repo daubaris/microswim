@@ -1,0 +1,12 @@
+.DS_Store
+debug.plist
+compile_commands.json
+.backup/
+.cache/
+Dockerfile
+Doxyfile
+docs/
+build/
+.venv/
+results/
+scripts/
