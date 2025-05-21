@@ -5,6 +5,7 @@
 #include <pthread.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <string.h>
 
 #include "constants.h"
 
@@ -28,7 +29,6 @@ typedef struct {
     uint64_t suspect_deadline;
     bool ping_req;
 } microswim_ping_t;
-
 
 typedef struct {
     microswim_member_t* member;

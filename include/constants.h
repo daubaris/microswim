@@ -6,4 +6,8 @@
 #define MAXIMUM_MEMBERS 10
 #define MAXIMUM_UPDATES 10
 
+#define SUSPECT_TIMEOUT 30
+
+#define SENTINEL -1
+
 #endif
