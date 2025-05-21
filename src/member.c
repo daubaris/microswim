@@ -2,6 +2,7 @@
 #include "log.h"
 #include "microswim.h"
 #include "utils.h"
+#include <stdlib.h>
 
 microswim_member_t* microswim_member_add(microswim_t* ms, microswim_member_t member) {
     if (ms->member_count + 1 >= MAXIMUM_MEMBERS) {
@@ -65,6 +66,16 @@ microswim_member_t* microswim_members_shift(microswim_t* ms, size_t position) {
     memset(new, 0, sizeof(microswim_member_t));
 
     return new;
+}
+
+void microswim_members_shuffle(microswim_t* ms) {
+    for (int i = ms->member_count - 1; i > 0; i--) {
+        int j = rand() % (i + 1);
+
+        microswim_member_t temp = ms->members[i];
+        ms->members[i] = ms->members[j];
+        ms->members[j] = temp;
+    }
 }
 
 size_t microswim_member_address_compare(microswim_member_t* a, microswim_member_t* b) {
