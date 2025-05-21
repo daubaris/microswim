@@ -5,6 +5,7 @@ set(CMAKE_C_STANDARD 11)
 add_executable(
   darwin
   main.c
+  ${PROJECT_SOURCE_DIR}/src/microswim.c
   ${PROJECT_SOURCE_DIR}/src/member.c
   ${PROJECT_SOURCE_DIR}/src/message.c
   ${PROJECT_SOURCE_DIR}/src/ping.c

@@ -52,4 +52,6 @@ typedef struct {
     pthread_mutex_t mutex;
 } microswim_t;
 
+void microswim_initialize(microswim_t* ms);
+
 #endif

@@ -14,4 +14,6 @@ void microswim_member_mark_confirmed(microswim_t* ms, microswim_member_t* member
 
 microswim_member_t* microswim_members_shift(microswim_t* ms, size_t position);
 
+size_t microswim_member_address_compare(microswim_member_t* a, microswim_member_t* b);
+
 #endif

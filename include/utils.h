@@ -6,5 +6,6 @@
 
 size_t microswim_random(size_t size);
 uint64_t microswim_milliseconds();
+void microswim_uuid_generate(char* uuid);
 
 #endif

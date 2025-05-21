@@ -3,6 +3,7 @@
 #include "utils.h"
 #include <stdlib.h>
 #include <time.h>
+#include <uuid/uuid.h>
 
 size_t microswim_random(size_t size) {
     size_t random = rand() % (size + 1);
@@ -13,4 +14,10 @@ uint64_t microswim_milliseconds() {
     struct timespec ts;
     clock_gettime(CLOCK_REALTIME, &ts);
     return (uint64_t)(ts.tv_sec) * 1000 + (ts.tv_nsec) / 1000000;
+}
+
+void microswim_uuid_generate(char* uuid) {
+    uuid_t uuid_binary;
+    uuid_generate_random(uuid_binary);
+    uuid_unparse(uuid_binary, uuid);
 }

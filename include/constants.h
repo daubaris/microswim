@@ -10,4 +10,9 @@
 
 #define SENTINEL -1
 
+// Masks
+#define SIN_FAMILY 0x01
+#define SIN_PORT 0x02
+#define SIN_ADDR 0x04
+
 #endif
