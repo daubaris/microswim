@@ -8,9 +8,14 @@ if(EXPORT_COMPILE_COMMANDS)
   set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 endif()
 
+option(CBOR "Support CBOR messages" ON)
 option(BUILD_BENCHMARKS "Build the benchmarks" OFF)
 option(BUILD_EXAMPLES "Build the examples" ON)
 option(BUILD_TESTS "Build the tests" OFF)
+
+if(CBOR)
+  set_directory_properties(PROPERTIES COMPILE_DEFINITIONS MICROSWIM_CBOR=1)
+endif()
 
 if(BUILD_BENCHMARKS)
   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/benchmarks)

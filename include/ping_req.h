@@ -1,5 +1,5 @@
-#ifndef MICROWSIM_PING_REQ_H
-#define MICROWSIM_PING_REQ_H
+#ifndef MICROSWIM_PING_REQ_H
+#define MICROSWIM_PING_REQ_H
 
 // TODO: implement
 

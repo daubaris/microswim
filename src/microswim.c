@@ -1,4 +1,13 @@
 #include "microswim.h"
+#include "log.h"
+#include "member.h"
+#include "update.h"
+#include "utils.h"
+#include <errno.h>
+#include <fcntl.h>
+#include <stdlib.h>
+#include <sys/socket.h>
+#include <unistd.h>
 
 void microswim_initialize(microswim_t* ms) {
     *ms = (microswim_t){ .socket = 0,
@@ -13,4 +22,94 @@ void microswim_initialize(microswim_t* ms) {
                          .round_robin_index = 0 };
 
     pthread_mutex_init(&ms->mutex, NULL);
+}
+
+void microswim_socket_setup(microswim_t* ms, char* addr, int port) {
+    char uuid[UUID_SIZE];
+    microswim_uuid_generate(uuid);
+    LOG_DEBUG("Local UUID: %s", uuid);
+
+    ms->socket = socket(AF_INET, SOCK_DGRAM, 0);
+    strncpy(ms->self.uuid, uuid, UUID_SIZE);
+    ms->self.addr.sin_family = AF_INET;
+    ms->self.addr.sin_port = htons(port);
+    ms->self.addr.sin_addr.s_addr = inet_addr(addr);
+
+    size_t index = -1;
+    microswim_member_t* member = microswim_member_add(ms, ms->self);
+    if (member) {
+        microswim_index_add(ms);
+        microswim_update_add(ms, member);
+    }
+
+    // Set the socket to non-blocking mode
+    int flags = fcntl(ms->socket, F_GETFL, 0);
+    if (fcntl(ms->socket, F_SETFL, flags | O_NONBLOCK) < 0) {
+        perror("Failed to set non-blocking");
+        close(ms->socket);
+        // TODO: error handling.
+        exit(EXIT_FAILURE);
+    }
+
+    if (bind(ms->socket, (struct sockaddr*)&ms->self.addr, sizeof(ms->self.addr)) != 0) {
+        int err = errno;
+        LOG_ERROR("`bind` exited with an error code: %d\n", err);
+        close(ms->socket);
+        exit(EXIT_FAILURE);
+    }
+}
+
+void microswim_index_remove(microswim_t* ms) {
+    if ((ms->member_count + 1) == 0)
+        return;
+
+    // Find the index of the highest value
+    int index = 0;
+    for (int i = 1; i < ms->member_count + 1; i++) {
+        if (ms->indices[i] > ms->indices[index]) {
+            index = i;
+        }
+    }
+
+    // Shift elements to remove the highest value
+    for (int i = index; i < ms->member_count; i++) {
+        ms->indices[i] = ms->indices[i + 1];
+    }
+}
+
+void microswim_index_add(microswim_t* ms) {
+    size_t index = 0;
+    if (ms->member_count >= 1) {
+        index = rand() % (ms->member_count);
+    }
+
+    size_t* position = microswim_indices_shift(ms, index);
+    *position = ms->member_count - 1;
+}
+
+size_t* microswim_indices_shift(microswim_t* ms, size_t index) {
+    for (int i = ms->member_count - 1; i > index; i--) {
+        ms->indices[i] = ms->indices[i - 1];
+    }
+
+    size_t* new = &ms->indices[index];
+
+    return new;
+}
+
+void microswim_indices_shuffle(microswim_t* ms) {
+    for (size_t i = ms->member_count - 1; i > 0; i--) {
+        int j = rand() % (i + 1);
+
+        size_t temp = ms->indices[i];
+        ms->indices[i] = ms->indices[j];
+        ms->indices[j] = temp;
+    }
+}
+
+int microswim_compare_by_count(const void* a, const void* b) {
+    microswim_update_t* u_a = (microswim_update_t*)a;
+    microswim_update_t* u_b = (microswim_update_t*)b;
+
+    return u_a->count - u_b->count;
 }
