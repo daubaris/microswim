@@ -52,6 +52,7 @@ void microswim_ping_message_send(microswim_t* ms, microswim_member_t* member) {
     microswim_message_construct(ms, &message, PING_MESSAGE, updates, update_count);
     size_t len = microswim_encode_message(&message, buffer, BUFFER_SIZE);
 
+    LOG_DEBUG("SENDING A PING TO: %s", member->uuid);
     ssize_t result = sendto(
         ms->socket, (const char*)buffer, len, 0, (struct sockaddr*)(&member->addr), sizeof(member->addr));
     if (result < 0) {
@@ -164,7 +165,7 @@ void microswim_ack_message_handle(microswim_t* ms, microswim_message_t* message)
 
         microswim_ping_req_t* ping_req = NULL;
         for (int i = 0; i < ms->ping_req_count; i++) {
-            if (strncmp(ping->member->uuid, ms->ping_reqs[i].target->uuid, UUID_SIZE) == 0) {
+            if (strncmp(message->uuid, ms->ping_reqs[i].target->uuid, UUID_SIZE) == 0) {
                 ping_req = &ms->ping_reqs[i];
                 microswim_update_t* updates[MAXIMUM_MEMBERS_IN_AN_UPDATE] = { 0 };
                 microswim_message_t message = { 0 };

@@ -22,7 +22,6 @@ void microswim_ping_req_message_handle(microswim_t* ms, microswim_message_t* mes
 
     microswim_ping_message_send(ms, target);
     microswim_ping_req_add(ms, source, target);
-    microswim_ping_t* ping = microswim_ping_add(ms, target);
 }
 
 microswim_ping_req_t*
