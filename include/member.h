@@ -18,9 +18,12 @@ void microswim_member_mark_suspect(microswim_t* ms, microswim_member_t* member);
 void microswim_member_mark_confirmed(microswim_t* ms, microswim_member_t* member);
 
 void microswim_members_shift(microswim_t* ms, size_t index);
+void microswim_members_check(microswim_t* ms, microswim_member_t* member);
 void microswim_members_check_suspects(microswim_t* ms);
 
 microswim_member_t* microswim_member_confirmed_find(microswim_t* ms, microswim_member_t* member);
 microswim_member_t* microswim_member_confirmed_add(microswim_t* ms, microswim_member_t member);
+
+size_t microswim_get_ping_req_candidates(microswim_t* ms, size_t members[FAILURE_DETECTION_GROUP]);
 
 #endif

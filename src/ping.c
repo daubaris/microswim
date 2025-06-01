@@ -2,6 +2,7 @@
 #include "constants.h"
 #include "log.h"
 #include "member.h"
+#include "message.h"
 #include "microswim.h"
 #include "utils.h"
 #include <stdlib.h>
@@ -68,32 +69,20 @@ void microswim_pings_check(microswim_t* ms) {
             if (ping != NULL) {
                 microswim_ping_remove(ms, ping);
             }
-        }
-        // else if (ms->pings[i].ping_req_deadline < microswim_milliseconds()) {
-        //     if (ms->pings[i].ping_req == false && ms->member_count - 1 > FAILURE_DETECTION_GROUP) {
-        //         for (int j = 0; j < FAILURE_DETECTION_GROUP; j++) {
-        //             // WARN: this should be reimplemented as now,
-        //             // the node might not be picked because there's a change
-        //             // the code will not pass the if statement, which in that
-        //             // case, it should continue looping until a suitable member
-        //             // is found.
-        //             // microswim_member_t* member = &ms->members[rand() % (ms->member_count - 1) + 1];
-        //             // NOTE: we don't want to ask the same member to make the request.
-        //             // We also want the member to be ALIVE.
-        //             // if (strncmp(member->uuid, ms->pings[i].member->uuid, UUID_SIZE) != 0 &&
-        //             //     (member->status == ALIVE)) {
-        //             //     microswim_ping_req_message_send(ms, member, ms->pings[i].member);
-        //             //     ms->pings[i].ping_req = true;
-        //             // WARN: the below is unneccessary?
-        //             // microswim_ping_req_t* ping_req =
-        //             //     microswim_ping_req_check_existing(ms, ms->pings[i].member->uuid);
-        //             // if (ping_req != NULL) {
-        //             //     microswim_ping_req_remove(ms, ping_req);
-        //             // }
-        //         }
-        //     }
-        // }
-        else {
+        } else if (ms->pings[i].ping_req_deadline < microswim_milliseconds() && !ms->pings[i].ping_req) {
+            size_t members[FAILURE_DETECTION_GROUP];
+            size_t count = microswim_get_ping_req_candidates(ms, members);
+            for (int j = 0; j < count; j++) {
+                microswim_member_t* member = &ms->members[members[j]];
+                microswim_message_t message = { 0 };
+                microswim_status_message_construct(ms, &message, PING_REQ_MESSAGE, ms->pings[i].member);
+                microswim_ping_req_message_send(ms, member, &message);
+                ms->pings[i].ping_req = true;
+                // NOTE: No need to remove the ping here. It'll be done after
+                // the suspicion deadline is reached.
+                // We should remove it upon receiving an acknowledgment.
+            }
+        } else {
             continue;
         }
     }

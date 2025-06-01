@@ -40,6 +40,12 @@ typedef struct {
 } microswim_ping_t;
 
 typedef struct {
+    microswim_member_t* target;
+    microswim_member_t* source;
+    uint64_t timeout;
+} microswim_ping_req_t;
+
+typedef struct {
     microswim_member_t* member;
     size_t count;
 } microswim_update_t;
@@ -61,8 +67,8 @@ typedef struct {
     microswim_member_t confirmed[MAXIMUM_MEMBERS];
     microswim_update_t updates[MAXIMUM_UPDATES];
     microswim_ping_t pings[MAXIMUM_MEMBERS];
+    microswim_ping_req_t ping_reqs[MAXIMUM_MEMBERS];
     size_t indices[MAXIMUM_MEMBERS];
-    // TODO: microswim_ping_req_t ping_reqs[MAXIMUM_MEMBERS];
     size_t member_count;
     size_t confirmed_count;
     size_t update_count;

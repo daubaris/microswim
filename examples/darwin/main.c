@@ -3,6 +3,7 @@
 #include "message.h"
 #include "microswim.h"
 #include "ping.h"
+#include "ping_req.h"
 #include "update.h"
 #include <stdlib.h>
 #include <unistd.h>
@@ -12,6 +13,7 @@ void* listener(void* params) {
 
     for (;;) {
         pthread_mutex_lock(&ms->mutex);
+        microswim_ping_reqs_check(ms);
         microswim_pings_check(ms);
         microswim_members_check_suspects(ms);
 
@@ -37,9 +39,12 @@ void* failure_detection(void* params) {
     for (;;) {
         pthread_mutex_lock(&ms->mutex);
 
-        microswim_member_t* member = microswim_member_retrieve(ms);
-        if (member != NULL) {
-            microswim_ping_message_send(ms, member);
+        for (int i = 0; i < GOSSIP_FANOUT; i++) {
+            microswim_member_t* member = microswim_member_retrieve(ms);
+            if (member != NULL) {
+                microswim_ping_message_send(ms, member);
+                microswim_ping_add(ms, member);
+            }
         }
 
         LOG_DEBUG("ms->ping_count: %zu", ms->ping_count);

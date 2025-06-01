@@ -1,4 +1,5 @@
 #include "member.h"
+#include "constants.h"
 #include "log.h"
 #include "message.h"
 #include "microswim.h"
@@ -105,7 +106,8 @@ void microswim_member_update(microswim_t* ms, microswim_member_t* ex, microswim_
 
         microswim_message_t message = { 0 };
         microswim_status_message_construct(ms, &message, ALIVE_MESSAGE, ex);
-        microswim_status_message_send(ms, &message);
+        microswim_member_t* recipient = microswim_member_retrieve(ms);
+        microswim_status_message_send(ms, recipient, &message);
 
         return;
     }
@@ -119,6 +121,13 @@ void microswim_member_update(microswim_t* ms, microswim_member_t* ex, microswim_
             ex->status = nw->status;
             ex->incarnation = nw->incarnation;
             ex->timeout = (microswim_milliseconds() + (uint64_t)(SUSPECT_TIMEOUT * 1000));
+
+            microswim_member_t member = { 0 };
+            strncpy(member.uuid, ex->uuid, UUID_SIZE);
+            microswim_ping_t* ping = microswim_ping_find(ms, &member);
+            if (ping != NULL) {
+                microswim_ping_remove(ms, ping);
+            }
         }
     }
 
@@ -206,7 +215,8 @@ void microswim_member_mark_alive(microswim_t* ms, microswim_member_t* member) {
     if (status == SUSPECT) {
         microswim_message_t message = { 0 };
         microswim_status_message_construct(ms, &message, ALIVE_MESSAGE, member);
-        microswim_status_message_send(ms, &message);
+        microswim_member_t* recipient = microswim_member_retrieve(ms);
+        microswim_status_message_send(ms, recipient, &message);
     }
 }
 
@@ -215,16 +225,10 @@ void microswim_member_mark_suspect(microswim_t* ms, microswim_member_t* member) 
         LOG_INFO("Member: %s was marked suspect", member->uuid);
         member->status = SUSPECT;
         member->timeout = (microswim_milliseconds() + (uint64_t)(SUSPECT_TIMEOUT * 1000));
-
-        // TODO: implement
-        // microswim_ping_req_t* ping_req = microswim_ping_req_check_existing(ms, member->uuid);
-        // if (ping_req) {
-        //     microswim_ping_req_remove(ms, ping_req);
-        // }
-
         microswim_message_t message = { 0 };
         microswim_status_message_construct(ms, &message, SUSPECT_MESSAGE, member);
-        microswim_status_message_send(ms, &message);
+        microswim_member_t* recipient = microswim_member_retrieve(ms);
+        microswim_status_message_send(ms, recipient, &message);
     }
 }
 
@@ -241,7 +245,8 @@ void microswim_member_mark_confirmed(microswim_t* ms, microswim_member_t* member
 
     microswim_message_t message = { 0 };
     microswim_status_message_construct(ms, &message, CONFIRM_MESSAGE, member);
-    microswim_status_message_send(ms, &message);
+    microswim_member_t* recipient = microswim_member_retrieve(ms);
+    microswim_status_message_send(ms, recipient, &message);
 }
 
 void microswim_members_shuffle(microswim_t* ms) {
@@ -298,6 +303,63 @@ void microswim_member_confirmed_remove(microswim_t* ms, microswim_member_t* memb
     ms->confirmed_count--;
 }
 
+size_t microswim_get_ping_req_candidates(microswim_t* ms, size_t members[FAILURE_DETECTION_GROUP]) {
+    size_t member_count = 0;
+    for (size_t i = 0; (i < ms->member_count - 1 && i < FAILURE_DETECTION_GROUP); i++) {
+        bool exists = false;
+        while (!exists) {
+            size_t index = rand() % (ms->member_count - 1) + 1;
+
+            for (size_t j = 0; j <= member_count; j++) {
+                if (index == members[j]) {
+                    exists = true;
+                    break;
+                }
+            }
+
+            if (!exists) {
+                members[member_count++] = index;
+                break;
+            }
+
+            exists = false;
+        }
+    }
+
+    return member_count;
+}
+
+void microswim_members_check(microswim_t* ms, microswim_member_t* member) {
+    microswim_member_t* existing_member = microswim_member_find(ms, member);
+    microswim_member_t* confirmed_member = microswim_member_confirmed_find(ms, member);
+
+    if (existing_member == NULL && confirmed_member == NULL) {
+        // Member is not found in either list, add it to the appropriate list
+        if (member->status == CONFIRMED) {
+            LOG_DEBUG("Added member: %s to confirmed list.", member->uuid);
+            microswim_member_t* new_member = microswim_member_confirmed_add(ms, *member);
+            if (new_member != NULL) {
+                microswim_update_add(ms, new_member);
+            }
+        } else {
+            microswim_member_t* new_member = microswim_member_add(ms, *member);
+            if (new_member != NULL) {
+                microswim_index_add(ms);
+                microswim_update_add(ms, new_member);
+            }
+        }
+    } else if (existing_member != NULL) {
+        // Member exists in the regular list
+        microswim_member_update(ms, existing_member, member);
+        if (member->status != CONFIRMED) {
+            microswim_update_t* update = microswim_update_find(ms, existing_member);
+            if (existing_member->uuid[0] != '\0' && update == NULL) {
+                microswim_update_add(ms, existing_member);
+            }
+        }
+    }
+}
+
 void microswim_members_check_suspects(microswim_t* ms) {
     for (size_t i = 0; i < ms->member_count; i++) {
         if (ms->members[i].status == SUSPECT) {
@@ -306,12 +368,7 @@ void microswim_members_check_suspects(microswim_t* ms) {
                 // BUG: Potentially... what should happen if confirmed is found?
                 if (!confirmed) {
                     microswim_member_mark_confirmed(ms, &ms->members[i]);
-                    // microswim_member_t* moved = microswim_member_move(ms, &ms->members[i]);
                     microswim_index_remove(ms);
-                    // printf("MOVING: %s to confirmed\n", moved->uuid);
-                    // if (!moved) {
-                    //     LOG_ERROR("Could not find the member to move");
-                    // }
                 }
             }
         }

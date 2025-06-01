@@ -6,6 +6,7 @@
 #include "member.h"
 #include "microswim.h"
 #include "ping.h"
+#include "ping_req.h"
 #include "update.h"
 #include <cbor/arrays.h>
 #include <cbor/maps.h>
@@ -28,9 +29,7 @@ void microswim_status_message_construct(
 void microswim_message_construct(
     microswim_t* ms, microswim_message_t* message, microswim_message_type_t type,
     microswim_update_t* updates[MAXIMUM_MEMBERS_IN_AN_UPDATE], size_t update_count) {
-    // NOTE: for PING_REQ messages, the logic is a bit different.
-    // Instead of using the origin's uuid and addr, we instead add
-    // the details of a member, who needs to be contacted.
+
     message->type = type;
     message->status = ms->self.status;
     message->incarnation = ms->self.incarnation;
@@ -58,13 +57,11 @@ void microswim_ping_message_send(microswim_t* ms, microswim_member_t* member) {
     if (result < 0) {
         LOG_ERROR("sendto failed: %s\n", strerror(errno));
     }
-    microswim_ping_add(ms, member);
 }
 
-void microswim_status_message_send(microswim_t* ms, microswim_message_t* message) {
+void microswim_status_message_send(microswim_t* ms, microswim_member_t* member, microswim_message_t* message) {
     // A message is sent after suspected node is marked as alive.
     unsigned char buffer[BUFFER_SIZE] = { 0 };
-    microswim_member_t* member = microswim_member_retrieve(ms);
     if (member != NULL) {
         size_t len = microswim_encode_message(message, buffer, BUFFER_SIZE);
         ssize_t result =
@@ -72,6 +69,16 @@ void microswim_status_message_send(microswim_t* ms, microswim_message_t* message
         if (result < 0) {
             LOG_ERROR("sendto failed: %s\n", strerror(errno));
         }
+    }
+}
+
+void microswim_ping_req_message_send(microswim_t* ms, microswim_member_t* member, microswim_message_t* message) {
+    unsigned char buffer[BUFFER_SIZE] = { 0 };
+    size_t len = microswim_encode_message(message, buffer, BUFFER_SIZE);
+    ssize_t result =
+        sendto(ms->socket, buffer, len, 0, (struct sockaddr*)(&member->addr), sizeof(member->addr));
+    if (result < 0) {
+        LOG_ERROR("sendto failed: %s\n", strerror(errno));
     }
 }
 
@@ -94,39 +101,6 @@ void microswim_message_print(microswim_message_t* message) {
         LOG_DEBUG(
             "\t%s: STATUS: %d, INCARNATION: %zu", message->mu[i].uuid, message->mu[i].status,
             message->mu[i].incarnation);
-    }
-}
-
-void microswim_members_check(microswim_t* ms, microswim_member_t* member) {
-    microswim_member_t* existing_member = microswim_member_find(ms, member);
-    microswim_member_t* confirmed_member = microswim_member_confirmed_find(ms, member);
-
-    if (existing_member == NULL && confirmed_member == NULL) {
-        // Member is not found in either list, add it to the appropriate list
-        if (member->status == CONFIRMED) {
-            LOG_DEBUG("Added member: %s to confirmed list.", member->uuid);
-            microswim_member_t* new_member = microswim_member_confirmed_add(ms, *member);
-            if (new_member != NULL) {
-                microswim_update_add(ms, new_member);
-            }
-        } else {
-            microswim_member_t* new_member = microswim_member_add(ms, *member);
-            if (new_member != NULL) {
-                microswim_index_add(ms);
-                microswim_update_add(ms, new_member);
-            }
-        }
-        // } else if (confirmed_member != NULL) {
-        //     microswim_member_update(ms, confirmed_member, member);
-    } else if (existing_member != NULL) {
-        // Member exists in the regular list
-        microswim_member_update(ms, existing_member, member);
-        if (member->status != CONFIRMED) {
-            microswim_update_t* update = microswim_update_find(ms, existing_member);
-            if (existing_member->uuid[0] != '\0' && update == NULL) {
-                microswim_update_add(ms, existing_member);
-            }
-        }
     }
 }
 
@@ -165,11 +139,16 @@ static void microswim_ping_message_handle(microswim_t* ms, microswim_message_t* 
     // An ack will piggyback known member information.
     microswim_ack_message_send(ms, message->addr);
     // A bit of a hack. Could be done cleaner.
-    microswim_member_t member = { 0 };
-    strncpy(member.uuid, message->uuid, UUID_SIZE);
-    microswim_ping_t* ping = microswim_ping_find(ms, &member);
+    microswim_member_t temp = { 0 };
+    strncpy(temp.uuid, message->uuid, UUID_SIZE);
+    microswim_ping_t* ping = microswim_ping_find(ms, &temp);
     if (ping != NULL) {
         microswim_ping_remove(ms, ping);
+    }
+
+    microswim_member_t* member = microswim_member_find(ms, &temp);
+    if (member) {
+        microswim_member_mark_alive(ms, member);
     }
 }
 
@@ -182,57 +161,58 @@ void microswim_ack_message_handle(microswim_t* ms, microswim_message_t* message)
 
     if (ping != NULL && ping->member->uuid[0] != '\0') {
         microswim_member_mark_alive(ms, ping->member);
+
+        microswim_ping_req_t* ping_req = NULL;
+        for (int i = 0; i < ms->ping_req_count; i++) {
+            if (strncmp(ping->member->uuid, ms->ping_reqs[i].target->uuid, UUID_SIZE) == 0) {
+                ping_req = &ms->ping_reqs[i];
+                microswim_update_t* updates[MAXIMUM_MEMBERS_IN_AN_UPDATE] = { 0 };
+                microswim_message_t message = { 0 };
+
+                unsigned char buffer[BUFFER_SIZE] = { 0 };
+                int update_count = microswim_updates_retrieve(ms, updates);
+                microswim_message_construct(ms, &message, ACK_MESSAGE, updates, update_count);
+                message.status = ping_req->target->status;
+                message.incarnation = ping_req->target->incarnation;
+                message.addr = ping_req->target->addr;
+
+                strncpy(message.uuid, ping_req->target->uuid, UUID_SIZE);
+                size_t len = microswim_encode_message(&message, buffer, BUFFER_SIZE);
+
+                ssize_t result = sendto(
+                    ms->socket, buffer, len, 0, (struct sockaddr*)(&ping_req->source->addr),
+                    sizeof(ping_req->source->addr));
+                if (result < 0) {
+                    LOG_ERROR("sendto failed: %s\n", strerror(errno));
+                }
+
+                microswim_ping_req_remove(ms, ping_req);
+            }
+        }
+
         microswim_ping_remove(ms, ping);
     }
-
-    // microswim_ping_req_t* ping_req = microswim_ping_req_check_existing(ms, message->uuid);
-
-    // if (ping_req != NULL && ping_req->member->uuid[0] != '\0') {
-    //     // TODO: send ack back with a modified origin details.
-    //     microswim_update_t* updates[MAXIMUM_MEMBERS_IN_AN_UPDATE] = { 0 };
-    //     microswim_message_t ack_message = { 0 };
-
-    //     unsigned char buffer[BUFFER_SIZE] = { 0 };
-    //     int update_count = microswim_updates_retrieve(ms, updates);
-    //     microswim_message_construct(ms, &ack_message, ACK_MESSAGE, updates, update_count);
-    //     strncpy(ack_message.uuid, message->uuid, UUID_SIZE);
-    //     ack_message.addr = message->addr;
-    //     ack_message.incarnation = message->incarnation;
-    //     ack_message.status = message->status;
-    //     size_t len = microswim_encode_message(&ack_message, buffer, BUFFER_SIZE);
-
-    //     ssize_t result = sendto(
-    //         ms->socket, buffer, len, 0, (struct sockaddr*)(&ping_req->member->addr),
-    //         sizeof(ping_req->member->addr));
-    //     if (result < 0) {
-    //         LOG_ERROR("sendto failed: %s\n", strerror(errno));
-    //     }
-    //     microswim_ping_req_remove(ms, ping_req);
-    // }
 }
 
 void microswim_message_handle(microswim_t* ms, unsigned char* buffer, ssize_t len) {
     microswim_message_t message = { 0 };
     microswim_decode_message(&message, buffer, len);
     microswim_message_print(&message);
+    microswim_message_extract_members(ms, &message);
 
     switch (message.type) {
         case PING_MESSAGE:
-            microswim_message_extract_members(ms, &message);
             microswim_ping_message_handle(ms, &message);
             break;
-        // case PING_REQ_MESSAGE:
-        //     microswim_members_extract(ms, &message);
-        //     microswim_ping_req_message_handle(ms, &message);
-        //     break;
+        case PING_REQ_MESSAGE:
+            microswim_ping_req_message_handle(ms, &message);
+            break;
         case ACK_MESSAGE:
-            microswim_message_extract_members(ms, &message);
             microswim_ack_message_handle(ms, &message);
             break;
         case ALIVE_MESSAGE:
         case SUSPECT_MESSAGE:
         case CONFIRM_MESSAGE:
-            microswim_message_extract_members(ms, &message);
             break;
         default:
             break;

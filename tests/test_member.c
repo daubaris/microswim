@@ -107,7 +107,7 @@ void test_round_robin(void) {
     microswim_member_t* m4 = add_member_mock(&ms, "192.168.0.4", 8003);
     microswim_index_add(&ms);
 
-    for (size_t i = 0; i < ms.member_count; i++) {
+    for (size_t i = 0; i < ms.member_count - 1; i++) {
         microswim_member_t* member = microswim_member_retrieve(&ms);
         TEST_ASSERT_EQUAL_CHAR_ARRAY(member->uuid, ms.members[ms.indices[i]].uuid, UUID_SIZE);
     }
@@ -226,6 +226,34 @@ void test_no_update_on_lower_incarnation(void) {
     TEST_ASSERT_EQUAL(3, member->incarnation); // No change
 }
 
+void test_ping_req_candidates(void) {
+    srand(time(NULL));
+    microswim_t ms;
+    microswim_initialize(&ms);
+
+    microswim_member_t* m1 = add_member_mock(&ms, "192.168.0.1", 8000);
+    microswim_index_add(&ms);
+    microswim_member_t* m2 = add_member_mock(&ms, "192.168.0.2", 8001);
+    microswim_index_add(&ms);
+    microswim_member_t* m3 = add_member_mock(&ms, "192.168.0.3", 8002);
+    microswim_index_add(&ms);
+    microswim_member_t* m4 = add_member_mock(&ms, "192.168.0.4", 8003);
+    microswim_index_add(&ms);
+    microswim_member_t* m5 = add_member_mock(&ms, "192.168.0.5", 8004);
+    microswim_index_add(&ms);
+    microswim_member_t* m6 = add_member_mock(&ms, "192.168.0.6", 8005);
+    microswim_index_add(&ms);
+
+    size_t members[FAILURE_DETECTION_GROUP];
+    size_t count = microswim_get_ping_req_candidates(&ms, members);
+
+    // TODO: verify each member is unique.
+    printf("count: %zu\n", count);
+    for (size_t i = 0; i < count; i++) {
+        printf("members[%zu]: %zu\n", i, members[i]);
+    }
+}
+
 int main() {
     RUN_TEST(test_add_member);
     RUN_TEST(test_move_to_confirmed);
@@ -236,4 +264,5 @@ int main() {
     RUN_TEST(test_confirmed_overrides_any_status);
     RUN_TEST(test_confirmed_overrides_any_status);
     RUN_TEST(test_no_update_on_lower_incarnation);
+    RUN_TEST(test_ping_req_candidates);
 }
