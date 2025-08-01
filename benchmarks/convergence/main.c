@@ -5,8 +5,15 @@
 #include "ping.h"
 #include "ping_req.h"
 #include "update.h"
+#include <hiredis/hiredis.h>
 #include <stdlib.h>
+#include <sys/time.h>
 #include <unistd.h>
+
+// Globals for tracking total number of messages and amount of data
+// until convergence.
+int messages = 0;
+size_t total_message_size = 0;
 
 void* listener(void* params) {
     microswim_t* ms = (microswim_t*)params;
@@ -25,6 +32,8 @@ void* listener(void* params) {
 
         if (bytes > 0) {
             buffer[bytes] = '\0';
+            messages++;
+            total_message_size += bytes;
             microswim_message_handle(ms, buffer, bytes);
         }
 
@@ -35,8 +44,52 @@ void* listener(void* params) {
 
 void* failure_detection(void* params) {
     microswim_t* ms = (microswim_t*)params;
+    size_t rounds = 0;
+    bool inserted = false;
+
+    // Redis to store all the convergence related results.
+    redisReply* reply;
+    redisContext* ctx = redisConnect("127.0.0.1", 6379);
+    if (ctx->err) {
+        LOG_ERROR("Redis error: %s", ctx->errstr);
+        exit(-1);
+    }
+
+    // Timestamps.
+    struct timeval tval_before, tval_after, tval_result;
+    gettimeofday(&tval_before, NULL);
+
+    // Identifier to which member the results belong.
+    int port = ntohs(ms->self.addr.sin_port);
 
     for (;;) {
+        if (ms->member_count < MAXIMUM_MEMBERS - 1) {
+            rounds++;
+        } else {
+            if (!inserted) {
+                gettimeofday(&tval_after, NULL);
+                timersub(&tval_after, &tval_before, &tval_result);
+
+                char query[1024];
+                snprintf(
+                    query, 1024, "%d,%d,%d,%d,%zu,%d,%lu,%ld.%06ld", port, GOSSIP_FANOUT,
+                    MAXIMUM_MEMBERS - 1, MAXIMUM_MEMBERS_IN_AN_UPDATE - 1, rounds, messages,
+                    total_message_size, (long int)tval_result.tv_sec, (long int)tval_result.tv_usec);
+
+                redisReply* reply = redisCommand(ctx, "SET result:%d %s", port, query);
+                if (reply == NULL) {
+                    LOG_ERROR("SET command failed.");
+                    redisFree(ctx);
+                    exit(-2);
+                }
+                inserted = true;
+            }
+
+            LOG_INFO(
+                "Gossip rounds to reach %d members: %d, and it took %ld.%06ld", MAXIMUM_MEMBERS - 1,
+                rounds, (long int)tval_result.tv_sec, (long int)tval_result.tv_usec);
+        }
+
         pthread_mutex_lock(&ms->mutex);
 
         for (int i = 0; i < GOSSIP_FANOUT; i++) {

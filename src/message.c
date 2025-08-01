@@ -8,6 +8,7 @@
 #include "ping.h"
 #include "ping_req.h"
 #include "update.h"
+#include "utils.h"
 #include <cbor/arrays.h>
 #include <cbor/maps.h>
 #include <cbor/serialization.h>
@@ -218,13 +219,6 @@ void microswim_message_handle(microswim_t* ms, unsigned char* buffer, ssize_t le
         default:
             break;
     }
-}
-
-static void microswim_sockaddr_to_uri(struct sockaddr_in* addr, char* buffer, size_t buffer_size) {
-    char ip_str[INET6_ADDRSTRLEN];
-    inet_ntop(AF_INET, &(addr->sin_addr), ip_str, sizeof(ip_str));
-    int port = ntohs(addr->sin_port);
-    snprintf(buffer, buffer_size, "%s:%d", ip_str, port);
 }
 
 #ifdef MICROSWIM_CBOR

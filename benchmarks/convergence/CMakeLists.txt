@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.20)
 set(CMAKE_C_STANDARD 11)
 
 add_executable(
-  darwin
+  convergence
   main.c
   ${PROJECT_SOURCE_DIR}/src/microswim.c
   ${PROJECT_SOURCE_DIR}/src/member.c
@@ -13,7 +13,7 @@ add_executable(
   ${PROJECT_SOURCE_DIR}/src/update.c
   ${PROJECT_SOURCE_DIR}/src/utils.c)
 
-target_include_directories(darwin PUBLIC ${PROJECT_BINARY_DIR}
-                                         ${PROJECT_SOURCE_DIR}/include)
+target_include_directories(convergence PUBLIC ${PROJECT_BINARY_DIR}
+                                              ${PROJECT_SOURCE_DIR}/include)
 
-target_link_libraries(darwin PUBLIC cbor uuid)
+target_link_libraries(convergence PUBLIC cbor uuid hiredis)
