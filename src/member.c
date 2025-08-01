@@ -40,7 +40,7 @@ microswim_member_t* microswim_member_retrieve(microswim_t* ms) {
 }
 
 microswim_member_t* microswim_member_add(microswim_t* ms, microswim_member_t member) {
-    if (ms->member_count + 1 >= MAXIMUM_MEMBERS) {
+    if (ms->member_count > MAXIMUM_MEMBERS) {
         LOG_ERROR("Cannot add more than %d members\n", MAXIMUM_MEMBERS);
         return NULL;
     }
@@ -273,7 +273,7 @@ size_t microswim_member_address_compare(microswim_member_t* a, microswim_member_
 }
 
 microswim_member_t* microswim_member_confirmed_add(microswim_t* ms, microswim_member_t member) {
-    if (ms->confirmed_count + 1 >= MAXIMUM_MEMBERS) {
+    if (ms->confirmed_count > MAXIMUM_MEMBERS) {
         LOG_ERROR("Cannot add more than %d members\n", MAXIMUM_MEMBERS);
         return NULL;
     }

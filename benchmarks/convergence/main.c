@@ -63,7 +63,7 @@ void* failure_detection(void* params) {
     int port = ntohs(ms->self.addr.sin_port);
 
     for (;;) {
-        if (ms->member_count < MAXIMUM_MEMBERS - 1) {
+        if (ms->member_count < MAXIMUM_MEMBERS) {
             rounds++;
         } else {
             if (!inserted) {
@@ -73,7 +73,7 @@ void* failure_detection(void* params) {
                 char query[1024];
                 snprintf(
                     query, 1024, "%d,%d,%d,%d,%zu,%d,%lu,%ld.%06ld", port, GOSSIP_FANOUT,
-                    MAXIMUM_MEMBERS - 1, MAXIMUM_MEMBERS_IN_AN_UPDATE - 1, rounds, messages,
+                    MAXIMUM_MEMBERS, MAXIMUM_MEMBERS_IN_AN_UPDATE, rounds, messages,
                     total_message_size, (long int)tval_result.tv_sec, (long int)tval_result.tv_usec);
 
                 redisReply* reply = redisCommand(ctx, "SET result:%d %s", port, query);
@@ -86,7 +86,7 @@ void* failure_detection(void* params) {
             }
 
             LOG_INFO(
-                "Gossip rounds to reach %d members: %d, and it took %ld.%06ld", MAXIMUM_MEMBERS - 1,
+                "Gossip rounds to reach %d members: %d, and it took %ld.%06ld", MAXIMUM_MEMBERS,
                 rounds, (long int)tval_result.tv_sec, (long int)tval_result.tv_usec);
         }
 

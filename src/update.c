@@ -4,7 +4,7 @@
 #include <stdlib.h>
 
 microswim_update_t* microswim_update_add(microswim_t* ms, microswim_member_t* member) {
-    if (ms->update_count + 1 >= MAXIMUM_UPDATES) {
+    if (ms->update_count > MAXIMUM_UPDATES) {
         LOG_ERROR("Cannot add more than %d members\n", MAXIMUM_UPDATES);
         return NULL;
     }
