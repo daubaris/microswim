@@ -2,7 +2,7 @@
 #define MICROSWIM_CONSTANTS_H
 
 #define UUID_SIZE 37
-// TODO: config.h.in file.
+
 #define PROTOCOL_PERIOD 1
 #define PING_REQ_PERIOD 0.5
 #define SUSPECT_TIMEOUT 20
@@ -17,7 +17,6 @@
 
 #define BUFFER_SIZE 2048
 
-// Masks
 #define SIN_FAMILY 0x01
 #define SIN_PORT 0x02
 #define SIN_ADDR 0x04
