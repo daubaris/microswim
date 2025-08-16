@@ -9,12 +9,17 @@ if(EXPORT_COMPILE_COMMANDS)
 endif()
 
 option(CBOR "Support CBOR messages" ON)
+option(JSON "Support JSON message" OFF)
 option(BUILD_BENCHMARKS "Build the benchmarks" OFF)
 option(BUILD_EXAMPLES "Build the examples" ON)
 option(BUILD_TESTS "Build the tests" OFF)
 
 if(CBOR)
   set_directory_properties(PROPERTIES COMPILE_DEFINITIONS MICROSWIM_CBOR=1)
+endif()
+
+if(JSON)
+  set_directory_properties(PROPERTIES COMPILE_DEFINITIONS MICROSWIM_JSON=1)
 endif()
 
 if(BUILD_BENCHMARKS)
