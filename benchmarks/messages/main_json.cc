@@ -34,6 +34,7 @@ static void BENCHMARK_microswim_json_decoding(benchmark::State& state) {
 static void BENCHMARK_microswim_json_encoding(benchmark::State& state) {
     microswim_message_t message;
     char buffer[BUFFER_SIZE] = { 0 };
+    size_t buffer_size = 0;
     strncpy(buffer, JSON_STRING, strlen(JSON_STRING));
     for (int i = 0; i < state.range(0); i++) {
         if (state.range(0) > 0) {
@@ -50,6 +51,7 @@ static void BENCHMARK_microswim_json_encoding(benchmark::State& state) {
 
     for (auto _ : state) {
         size_t len = microswim_json_encode_message(&message, (unsigned char*)buffer, BUFFER_SIZE);
+        state.counters["message_size"] = len;
     }
 }
 
