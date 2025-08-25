@@ -18,31 +18,31 @@
 
 void microswim_status_message_construct(
     microswim_t* ms, microswim_message_t* message, microswim_message_type_t type, microswim_member_t* member) {
-    strncpy(message->uuid, ms->self.uuid, UUID_SIZE);
-    message->type = type;
-    message->addr = ms->self.addr;
-    message->status = ms->self.status;
-    message->incarnation = ms->self.incarnation;
-    message->mu[0] = *member;
-    message->update_count = 1;
+    strncpy(message->header.uuid, ms->self.uuid, UUID_SIZE);
+    message->header.type = type;
+    message->header.addr = ms->self.addr;
+    message->header.status = ms->self.status;
+    message->header.incarnation = ms->self.incarnation;
+    message->header.mu[0] = *member;
+    message->header.update_count = 1;
 }
 
 void microswim_message_construct(
     microswim_t* ms, microswim_message_t* message, microswim_message_type_t type,
     microswim_update_t* updates[MAXIMUM_MEMBERS_IN_AN_UPDATE], size_t update_count) {
 
-    message->type = type;
-    message->status = ms->self.status;
-    message->incarnation = ms->self.incarnation;
-    message->addr = ms->self.addr;
+    message->header.type = type;
+    message->header.status = ms->self.status;
+    message->header.incarnation = ms->self.incarnation;
+    message->header.addr = ms->self.addr;
 
-    strncpy(message->uuid, ms->self.uuid, UUID_SIZE);
+    strncpy(message->header.uuid, ms->self.uuid, UUID_SIZE);
 
     for (size_t i = 0; i < update_count; i++) {
-        message->mu[i] = *updates[i]->member;
+        message->header.mu[i] = *updates[i]->member;
     }
 
-    message->update_count = update_count;
+    message->header.update_count = update_count;
 }
 
 void microswim_ping_message_send(microswim_t* ms, microswim_member_t* member) {
@@ -87,36 +87,37 @@ void microswim_ping_req_message_send(microswim_t* ms, microswim_member_t* member
 void microswim_message_print(microswim_message_t* message) {
     LOG_DEBUG(
         "MESSAGE: %s, FROM: %s, STATUS: %d, INCARNATION: %d, URI: %d",
-        (message->type == ALIVE_MESSAGE ?
+        (message->header.type == ALIVE_MESSAGE ?
              "ALIVE MESSAGE" :
-             (message->type == SUSPECT_MESSAGE ?
+             (message->header.type == SUSPECT_MESSAGE ?
                   "SUSPECT MESSAGE" :
-                  (message->type == CONFIRM_MESSAGE ?
+                  (message->header.type == CONFIRM_MESSAGE ?
                        "CONFIRM MESSAGE" :
-                       (message->type == PING_MESSAGE ?
+                       (message->header.type == PING_MESSAGE ?
                             "PING MESSAGE" :
-                            (message->type == PING_REQ_MESSAGE ? "PING_REQ_MESSAGE" : "ACK MESSAGE"))))),
-        message->uuid, message->status, message->incarnation, ntohs(message->addr.sin_port));
+                            (message->header.type == PING_REQ_MESSAGE ? "PING_REQ_MESSAGE" : "ACK MESSAGE"))))),
+        message->header.uuid, message->header.status, message->header.incarnation,
+        ntohs(message->header.addr.sin_port));
 
     LOG_DEBUG("UPDATES:");
-    for (int i = 0; i < message->update_count; i++) {
+    for (int i = 0; i < message->header.update_count; i++) {
         LOG_DEBUG(
-            "\t%s: STATUS: %d, INCARNATION: %zu", message->mu[i].uuid, message->mu[i].status,
-            message->mu[i].incarnation);
+            "\t%s: STATUS: %d, INCARNATION: %zu", message->header.mu[i].uuid,
+            message->header.mu[i].status, message->header.mu[i].incarnation);
     }
 }
 
 void microswim_message_extract_members(microswim_t* ms, microswim_message_t* message) {
     microswim_member_t self;
-    strncpy(self.uuid, message->uuid, UUID_SIZE);
-    self.addr = message->addr;
-    self.status = message->status;
-    self.incarnation = message->incarnation;
+    strncpy(self.uuid, message->header.uuid, UUID_SIZE);
+    self.addr = message->header.addr;
+    self.status = message->header.status;
+    self.incarnation = message->header.incarnation;
 
     microswim_members_check(ms, &self);
 
-    for (int i = 0; i < message->update_count; i++) {
-        microswim_member_t* message_member = &message->mu[i];
+    for (int i = 0; i < message->header.update_count; i++) {
+        microswim_member_t* message_member = &message->header.mu[i];
         microswim_members_check(ms, message_member);
     }
 }
@@ -139,10 +140,10 @@ void microswim_ack_message_send(microswim_t* ms, struct sockaddr_in addr) {
 static void microswim_ping_message_handle(microswim_t* ms, microswim_message_t* message) {
     // NOTE: if a member receives a ping, it should send an ack.
     // An ack will piggyback known member information.
-    microswim_ack_message_send(ms, message->addr);
+    microswim_ack_message_send(ms, message->header.addr);
     // A bit of a hack. Could be done cleaner.
     microswim_member_t temp = { 0 };
-    strncpy(temp.uuid, message->uuid, UUID_SIZE);
+    strncpy(temp.uuid, message->header.uuid, UUID_SIZE);
     microswim_ping_t* ping = microswim_ping_find(ms, &temp);
     if (ping != NULL) {
         microswim_ping_remove(ms, ping);
@@ -158,7 +159,7 @@ void microswim_ack_message_handle(microswim_t* ms, microswim_message_t* message)
     // TODO: decide what to do when a PING is NULL.
     // It should never happen here, though. But it must be handled.
     microswim_member_t member = { 0 };
-    strncpy(member.uuid, message->uuid, UUID_SIZE);
+    strncpy(member.uuid, message->header.uuid, UUID_SIZE);
     microswim_ping_t* ping = microswim_ping_find(ms, &member);
 
     if (ping != NULL && ping->member->uuid[0] != '\0') {
@@ -166,7 +167,7 @@ void microswim_ack_message_handle(microswim_t* ms, microswim_message_t* message)
 
         microswim_ping_req_t* ping_req = NULL;
         for (int i = 0; i < ms->ping_req_count; i++) {
-            if (strncmp(message->uuid, ms->ping_reqs[i].target->uuid, UUID_SIZE) == 0) {
+            if (strncmp(message->header.uuid, ms->ping_reqs[i].target->uuid, UUID_SIZE) == 0) {
                 ping_req = &ms->ping_reqs[i];
                 microswim_update_t* updates[MAXIMUM_MEMBERS_IN_AN_UPDATE] = { 0 };
                 microswim_message_t message = { 0 };
@@ -174,11 +175,11 @@ void microswim_ack_message_handle(microswim_t* ms, microswim_message_t* message)
                 unsigned char buffer[BUFFER_SIZE] = { 0 };
                 int update_count = microswim_updates_retrieve(ms, updates);
                 microswim_message_construct(ms, &message, ACK_MESSAGE, updates, update_count);
-                message.status = ping_req->target->status;
-                message.incarnation = ping_req->target->incarnation;
-                message.addr = ping_req->target->addr;
+                message.header.status = ping_req->target->status;
+                message.header.incarnation = ping_req->target->incarnation;
+                message.header.addr = ping_req->target->addr;
 
-                strncpy(message.uuid, ping_req->target->uuid, UUID_SIZE);
+                strncpy(message.header.uuid, ping_req->target->uuid, UUID_SIZE);
                 size_t len = microswim_encode_message(&message, buffer, BUFFER_SIZE);
 
                 ssize_t result = sendto(
@@ -202,7 +203,7 @@ void microswim_message_handle(microswim_t* ms, unsigned char* buffer, ssize_t le
     microswim_message_print(&message);
     microswim_message_extract_members(ms, &message);
 
-    switch (message.type) {
+    switch (message.header.type) {
         case PING_MESSAGE:
             microswim_ping_message_handle(ms, &message);
             break;
@@ -250,16 +251,17 @@ static void microswim_cbor_uri_to_sockaddr(struct sockaddr_in* addr, cbor_item_t
 size_t microswim_cbor_encode_message(microswim_message_t* message, unsigned char* buffer, size_t size) {
     cbor_item_t* origin_map = cbor_new_definite_map(6);
     char uri_buffer[INET6_ADDRSTRLEN];
-    microswim_sockaddr_to_uri(&message->addr, uri_buffer, sizeof(uri_buffer));
+    microswim_sockaddr_to_uri(&message->header.addr, uri_buffer, sizeof(uri_buffer));
     int success = cbor_map_add(
         origin_map,
         (struct cbor_pair){ .key = cbor_move(cbor_build_string("message")),
-                            .value = cbor_move(cbor_build_uint8((uint8_t)message->type)) });
+                            .value = cbor_move(cbor_build_uint8((uint8_t)message->header.type)) });
     success &= cbor_map_add(
         origin_map,
-        (struct cbor_pair){
-            .key = cbor_move(cbor_build_string("uuid")),
-            .value = cbor_move(message->uuid[0] != '\0' ? cbor_build_string(message->uuid) : cbor_new_null()) });
+        (struct cbor_pair){ .key = cbor_move(cbor_build_string("uuid")),
+                            .value = cbor_move(
+                                message->header.uuid[0] != '\0' ? cbor_build_string(message->header.uuid) :
+                                                                  cbor_new_null()) });
     success &= cbor_map_add(
         origin_map,
         (struct cbor_pair){ .key = cbor_move(cbor_build_string("uri")),
@@ -267,26 +269,26 @@ size_t microswim_cbor_encode_message(microswim_message_t* message, unsigned char
     success &= cbor_map_add(
         origin_map,
         (struct cbor_pair){ .key = cbor_move(cbor_build_string("status")),
-                            .value = cbor_move(cbor_build_uint8((uint8_t)message->status)) });
+                            .value = cbor_move(cbor_build_uint8((uint8_t)message->header.status)) });
     success &= cbor_map_add(
         origin_map,
         (struct cbor_pair){ .key = cbor_move(cbor_build_string("incarnation")),
-                            .value = cbor_move(cbor_build_uint8((uint8_t)message->incarnation)) });
+                            .value = cbor_move(cbor_build_uint8((uint8_t)message->header.incarnation)) });
     if (!success) {
         LOG_ERROR("Preallocated storage for map is full (origin_map)");
         return 0;
     }
 
-    cbor_item_t* update_array = cbor_new_definite_array(message->update_count);
+    cbor_item_t* update_array = cbor_new_definite_array(message->header.update_count);
 
-    for (int i = 0; i < message->update_count; i++) {
+    for (int i = 0; i < message->header.update_count; i++) {
         char uri_buffer[INET6_ADDRSTRLEN];
-        microswim_sockaddr_to_uri(&message->mu[i].addr, uri_buffer, sizeof(uri_buffer));
+        microswim_sockaddr_to_uri(&message->header.mu[i].addr, uri_buffer, sizeof(uri_buffer));
         cbor_item_t* update_map = cbor_new_definite_map(4);
         int success = cbor_map_add(
             update_map,
             (struct cbor_pair){ .key = cbor_move(cbor_build_string("uuid")),
-                                .value = cbor_move(cbor_build_string(message->mu[i].uuid)) });
+                                .value = cbor_move(cbor_build_string(message->header.mu[i].uuid)) });
         success &= cbor_map_add(
             update_map,
             (struct cbor_pair){ .key = cbor_move(cbor_build_string("uri")),
@@ -294,11 +296,11 @@ size_t microswim_cbor_encode_message(microswim_message_t* message, unsigned char
         success &= cbor_map_add(
             update_map,
             (struct cbor_pair){ .key = cbor_move(cbor_build_string("status")),
-                                .value = cbor_move(cbor_build_uint8((uint8_t)message->mu[i].status)) });
+                                .value = cbor_move(cbor_build_uint8((uint8_t)message->header.mu[i].status)) });
         success &= cbor_map_add(
             update_map,
             (struct cbor_pair){ .key = cbor_move(cbor_build_string("incarnation")),
-                                .value = cbor_move(cbor_build_uint8((uint8_t)message->mu[i].incarnation)) });
+                                .value = cbor_move(cbor_build_uint8((uint8_t)message->header.mu[i].incarnation)) });
         success &= cbor_array_push(update_array, cbor_move(update_map));
 
         if (!success) {
@@ -329,7 +331,7 @@ size_t microswim_cbor_encode_message(microswim_message_t* message, unsigned char
 // Function to handle processing updates (the array inside "updates")
 static void microswim_cbor_process_updates(microswim_message_t* message, cbor_item_t* updates) {
     size_t update_count = cbor_array_size(updates);
-    message->update_count = (int)update_count;
+    message->header.update_count = (int)update_count;
     for (size_t j = 0; j < update_count; j++) {
         cbor_item_t* array_item = cbor_array_handle(updates)[j];
         for (size_t k = 0; k < cbor_map_size(array_item); k++) {
@@ -339,16 +341,16 @@ static void microswim_cbor_process_updates(microswim_message_t* message, cbor_it
             memcpy(array_key, cbor_string_handle(array_pair.key), array_key_length);
             if (strncmp(array_key, "uuid", array_key_length) == 0) {
                 size_t uuid_length = cbor_string_length(array_pair.value);
-                memcpy(message->mu[j].uuid, cbor_string_handle(array_pair.value), uuid_length);
-                message->mu[j].uuid[uuid_length] = '\0';
+                memcpy(message->header.mu[j].uuid, cbor_string_handle(array_pair.value), uuid_length);
+                message->header.mu[j].uuid[uuid_length] = '\0';
             } else if (strncmp(array_key, "uri", array_key_length) == 0) {
-                microswim_cbor_uri_to_sockaddr(&message->mu[j].addr, array_pair.value);
+                microswim_cbor_uri_to_sockaddr(&message->header.mu[j].addr, array_pair.value);
             } else if (strncmp(array_key, "status", array_key_length) == 0) {
                 size_t status = cbor_get_uint8(array_pair.value);
-                message->mu[j].status = (microswim_member_status_t)status;
+                message->header.mu[j].status = (microswim_member_status_t)status;
             } else if (strncmp(array_key, "incarnation", array_key_length) == 0) {
                 size_t incarnation = cbor_get_uint8(array_pair.value);
-                message->mu[j].incarnation = (int)incarnation;
+                message->header.mu[j].incarnation = (int)incarnation;
             }
         }
     }
@@ -357,19 +359,19 @@ static void microswim_cbor_process_updates(microswim_message_t* message, cbor_it
 static void microswim_cbor_process_pair(microswim_message_t* message, const char* key, size_t key_length, struct cbor_pair pair) {
     if (strncmp(key, "message", key_length) == 0) {
         size_t value = cbor_get_uint8(pair.value);
-        message->type = (microswim_message_type_t)value;
+        message->header.type = (microswim_message_type_t)value;
     } else if (strncmp(key, "uuid", key_length) == 0) {
         size_t length = cbor_string_length(pair.value);
-        memcpy(message->uuid, cbor_string_handle(pair.value), length);
-        message->uuid[length] = '\0';
+        memcpy(message->header.uuid, cbor_string_handle(pair.value), length);
+        message->header.uuid[length] = '\0';
     } else if (strncmp(key, "uri", key_length) == 0) {
-        microswim_cbor_uri_to_sockaddr(&message->addr, pair.value);
+        microswim_cbor_uri_to_sockaddr(&message->header.addr, pair.value);
     } else if (strncmp(key, "status", key_length) == 0) {
         size_t value = cbor_get_uint8(pair.value);
-        message->status = (microswim_member_status_t)value;
+        message->header.status = (microswim_member_status_t)value;
     } else if (strncmp(key, "incarnation", key_length) == 0) {
         size_t value = cbor_get_uint8(pair.value);
-        message->incarnation = value;
+        message->header.incarnation = value;
     } else if (strncmp(key, "updates", key_length) == 0) {
         microswim_cbor_process_updates(message, pair.value);
     }
@@ -457,26 +459,27 @@ void microswim_json_decode_message(microswim_message_t* message, const char* buf
 
     for (int i = 0; i < r; i++) {
         if (jsoneq(buffer, &t[i], "message") == 0) {
-            message->type = strtol(buffer + t[i + 1].start, NULL, 10);
+            message->header.type = strtol(buffer + t[i + 1].start, NULL, 10);
             i++;
         }
         if (jsoneq(buffer, &t[i], "uuid") == 0) {
-            strncpy(message->uuid, buffer + t[i + 1].start, t[i + 1].end - t[i + 1].start);
+            strncpy(message->header.uuid, buffer + t[i + 1].start, t[i + 1].end - t[i + 1].start);
             i++;
         }
         if (jsoneq(buffer, &t[i], "uri") == 0) {
             char uri_buffer[t[i + 1].end - t[i + 1].start];
             memset(uri_buffer, 0, sizeof(uri_buffer));
             strncpy(uri_buffer, buffer + t[i + 1].start, t[i + 1].end - t[i + 1].start);
-            microswim_json_uri_to_sockaddr(&message->addr, uri_buffer, t[i + 1].end - t[i + 1].start);
+            microswim_json_uri_to_sockaddr(
+                &message->header.addr, uri_buffer, t[i + 1].end - t[i + 1].start);
             i++;
         }
         if (jsoneq(buffer, &t[i], "status") == 0) {
-            message->status = strtol(buffer + t[i + 1].start, NULL, 10);
+            message->header.status = strtol(buffer + t[i + 1].start, NULL, 10);
             i++;
         }
         if (jsoneq(buffer, &t[i], "incarnation") == 0) {
-            message->incarnation = strtol(buffer + t[i + 1].start, NULL, 10);
+            message->header.incarnation = strtol(buffer + t[i + 1].start, NULL, 10);
             i++;
         }
         if (jsoneq(buffer, &t[i], "updates") == 0) {
@@ -485,7 +488,7 @@ void microswim_json_decode_message(microswim_message_t* message, const char* buf
             }
             // + 1 means that we hit the '[', indicating an array.
             int array_size = t[i + 1].size;
-            message->update_count = array_size;
+            message->header.update_count = array_size;
 
             // + 2 means that we hit the '{', indicating an object.
             if (t[i + 2].type != JSMN_OBJECT) {
@@ -505,7 +508,7 @@ void microswim_json_decode_message(microswim_message_t* message, const char* buf
                     jsmntok_t* inner = &t[i + j + k + 3];
                     if (jsoneq(buffer, inner, "uuid") == 0) {
                         strncpy(
-                            message->mu[j].uuid, buffer + (inner + 1)->start,
+                            message->header.mu[j].uuid, buffer + (inner + 1)->start,
                             (inner + 1)->end - (inner + 1)->start);
                         i++;
                     } else if (jsoneq(buffer, inner, "uri") == 0) {
@@ -514,13 +517,13 @@ void microswim_json_decode_message(microswim_message_t* message, const char* buf
                         strncpy(
                             uri_buffer, buffer + (inner + 1)->start, (inner + 1)->end - (inner + 1)->start);
                         microswim_json_uri_to_sockaddr(
-                            &message->mu[j].addr, uri_buffer, (inner + 1)->end - (inner + 1)->start);
+                            &message->header.mu[j].addr, uri_buffer, (inner + 1)->end - (inner + 1)->start);
                         i++;
                     } else if (jsoneq(buffer, inner, "status") == 0) {
-                        message->mu[j].status = strtol(buffer + (inner + 1)->start, NULL, 10);
+                        message->header.mu[j].status = strtol(buffer + (inner + 1)->start, NULL, 10);
                         i++;
                     } else if (jsoneq(buffer, inner, "incarnation") == 0) {
-                        message->mu[j].incarnation = strtol(buffer + (inner + 1)->start, NULL, 10);
+                        message->header.mu[j].incarnation = strtol(buffer + (inner + 1)->start, NULL, 10);
                         i++;
                     }
                 }
@@ -535,23 +538,25 @@ void microswim_json_decode_message(microswim_message_t* message, const char* buf
 
 size_t microswim_json_encode_message(microswim_message_t* message, unsigned char* buffer, size_t size) {
     char uri_buffer[INET6_ADDRSTRLEN];
-    microswim_sockaddr_to_uri(&message->addr, uri_buffer, sizeof(uri_buffer));
+    microswim_sockaddr_to_uri(&message->header.addr, uri_buffer, sizeof(uri_buffer));
 
     int remainder = snprintf(
         (char*)buffer, BUFFER_SIZE,
         "{\"message\": %d, \"uuid\": \"%s\", \"uri\": \"%s\", \"status\": %d, \"incarnation\": %d, "
         "\"updates\": [",
-        message->type, message->uuid, uri_buffer, message->status, message->incarnation);
+        message->header.type, message->header.uuid, uri_buffer, message->header.status,
+        message->header.incarnation);
 
-    for (int i = 0; i < message->update_count; i++) {
+    for (int i = 0; i < message->header.update_count; i++) {
         char uri_buffer[INET6_ADDRSTRLEN];
-        microswim_sockaddr_to_uri(&message->mu[i].addr, uri_buffer, sizeof(uri_buffer));
+        microswim_sockaddr_to_uri(&message->header.mu[i].addr, uri_buffer, sizeof(uri_buffer));
         remainder += snprintf(
             (char*)buffer + remainder, BUFFER_SIZE - remainder,
             "{\"uuid\": \"%s\", \"uri\": \"%s\", \"status\": %d, \"incarnation\": %d}",
-            message->mu[i].uuid, uri_buffer, message->mu[i].status, message->mu[i].incarnation);
+            message->header.mu[i].uuid, uri_buffer, message->header.mu[i].status,
+            message->header.mu[i].incarnation);
 
-        if (i < message->update_count - 1) {
+        if (i < message->header.update_count - 1) {
             remainder += snprintf((char*)buffer + remainder, BUFFER_SIZE - remainder, ",");
         } else {
             remainder += snprintf((char*)buffer + remainder, BUFFER_SIZE - remainder, "]}");

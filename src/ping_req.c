@@ -7,9 +7,9 @@
 
 void microswim_ping_req_message_handle(microswim_t* ms, microswim_message_t* message) {
     microswim_member_t temp = { 0 };
-    strncpy(temp.uuid, message->uuid, UUID_SIZE);
+    strncpy(temp.uuid, message->header.uuid, UUID_SIZE);
     microswim_member_t* source = microswim_member_find(ms, &temp);
-    microswim_member_t* target = microswim_member_find(ms, &message->mu[0]);
+    microswim_member_t* target = microswim_member_find(ms, &message->header.mu[0]);
 
     if (!source) {
         LOG_ERROR("Could not find the source member for ping_req");
