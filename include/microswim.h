@@ -58,11 +58,6 @@ typedef struct {
     int incarnation;
     microswim_member_t mu[MAXIMUM_UPDATES];
     int update_count;
-} microswim_header_t;
-
-typedef struct {
-    microswim_header_t header;
-    void* payload;
 } microswim_message_t;
 
 typedef struct {
