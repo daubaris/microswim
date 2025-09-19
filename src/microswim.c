@@ -16,9 +16,14 @@ void microswim_initialize(microswim_t* ms) {
                          .confirmed = { { { 0 } } },
                          .updates = { { 0 } },
                          .pings = { { 0 } },
+                         .ping_reqs = { { 0 } },
+                         .events = { { 0 } },
                          .member_count = 0,
+                         .confirmed_count = 0,
                          .update_count = 0,
                          .ping_count = 0,
+                         .ping_req_count = 0,
+                         .event_count = 0,
                          .round_robin_index = 0 };
 
     pthread_mutex_init(&ms->mutex, NULL);

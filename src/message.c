@@ -375,6 +375,42 @@ static void microswim_cbor_process_pair(microswim_message_t* message, const char
     }
 }
 
+microswim_message_type_t microswim_cbor_message_type_get(unsigned char* buffer, ssize_t len) {
+    struct cbor_load_result result;
+    cbor_item_t* root = cbor_load(buffer, len, &result);
+
+    if (result.error.code != CBOR_ERR_NONE) {
+        LOG_ERROR(
+            "There was an error while reading the input near byte %zu (read "
+            "%zu bytes in total)",
+            result.error.position, result.read);
+
+        return MALFORMED_MESSAGE;
+    }
+
+    microswim_message_type_t message_type = MALFORMED_MESSAGE;
+
+    switch (cbor_typeof(root)) {
+        case CBOR_TYPE_MAP: {
+            struct cbor_pair pair = cbor_map_handle(root)[0];
+            size_t key_length = cbor_string_length(pair.key);
+            char key[key_length];
+            memcpy(key, cbor_string_handle(pair.key), key_length);
+            if (strncmp(key, "message", key_length) == 0) {
+                size_t value = cbor_get_uint8(pair.value);
+                message_type = (microswim_message_type_t)value;
+            }
+            break;
+        }
+        default:
+            LOG_ERROR("Wrong message type: %d, ignoring...", cbor_typeof(root));
+            break;
+    }
+
+    cbor_decref(&root);
+    return message_type;
+}
+
 void microswim_cbor_decode_message(microswim_message_t* message, unsigned char* buffer, ssize_t len) {
     struct cbor_load_result result;
     cbor_item_t* root = cbor_load(buffer, len, &result);
@@ -435,6 +471,32 @@ static int jsoneq(const char* json, jsmntok_t* tok, const char* s) {
         return 0;
     }
     return -1;
+}
+
+microswim_message_type_t microswim_json_message_type_get(char* buffer, ssize_t len) {
+    int r;
+    jsmn_parser p;
+    jsmntok_t t[len];
+
+    jsmn_init(&p);
+    r = jsmn_parse(&p, buffer, strlen(buffer), t, sizeof(t) / sizeof(t[0]));
+    if (r < 0) {
+        printf("Failed to parse JSON: %d\n", r);
+        return MALFORMED_MESSAGE;
+    }
+
+    if (r < 1 || t[0].type != JSMN_OBJECT) {
+        printf("Object expected\n");
+        return -1;
+    }
+
+    microswim_message_type_t message_type = MALFORMED_MESSAGE;
+
+    if (jsoneq(buffer, &t[0], "message") == 0) {
+        message_type = strtol(buffer + t[1].start, NULL, 10);
+    }
+
+    return message_type;
 }
 
 // TODO: might need to change from void to int to represent successful parse.
@@ -539,7 +601,8 @@ size_t microswim_json_encode_message(microswim_message_t* message, unsigned char
 
     int remainder = snprintf(
         (char*)buffer, BUFFER_SIZE,
-        "{\"message\": %d, \"uuid\": \"%s\", \"uri\": \"%s\", \"status\": %d, \"incarnation\": %d, "
+        "{\"message\": %d, \"uuid\": \"%s\", \"uri\": \"%s\", \"status\": %d, \"incarnation\": "
+        "%d, "
         "\"updates\": [",
         message->type, message->uuid, uri_buffer, message->status, message->incarnation);
 
@@ -560,7 +623,7 @@ size_t microswim_json_encode_message(microswim_message_t* message, unsigned char
 
     return remainder;
 }
-#endif
+#endif // MICROSWIM_JSON
 
 size_t microswim_encode_message(microswim_message_t* message, unsigned char* buffer, size_t size) {
 #ifdef MICROSWIM_CBOR
@@ -577,5 +640,14 @@ void microswim_decode_message(microswim_message_t* message, unsigned char* buffe
 #endif
 #ifdef MICROSWIM_JSON
     microswim_json_decode_message(message, (const char*)buffer, len);
+#endif
+}
+
+microswim_message_type_t microswim_message_type_get(unsigned char* buffer, ssize_t len) {
+#ifdef MICROSWIM_CBOR
+    return microswim_cbor_message_type_get(buffer, len);
+#endif
+#ifdef MICROSWIM_JSON
+    return microswim_json_message_type_get(buffer, len);
 #endif
 }

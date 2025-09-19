@@ -21,7 +21,10 @@ typedef enum {
     ACK_MESSAGE,
     ALIVE_MESSAGE,
     SUSPECT_MESSAGE,
-    CONFIRM_MESSAGE
+    CONFIRM_MESSAGE,
+    EVENT_MESSAGE,
+    UNKOWN_MESSAGE,
+    MALFORMED_MESSAGE
 } microswim_message_type_t;
 
 typedef struct {
@@ -61,6 +64,32 @@ typedef struct {
 } microswim_message_t;
 
 typedef struct {
+    char uuid[UUID_SIZE];
+    struct sockaddr_in addr;
+    microswim_member_status_t status;
+    int incarnation;
+    microswim_member_t mu[MAXIMUM_UPDATES];
+    int update_count;
+} microswim_gossip_message_t;
+
+typedef size_t (*microswim_event_encoder_t)(void* data, void* output, size_t size);
+typedef bool (*microswim_event_decoder_t)(void* data, void* output);
+typedef void (*microswim_event_handler_t)(void* data);
+
+typedef struct {
+    uint8_t type;
+    size_t size;
+    microswim_event_encoder_t encoder;
+    microswim_event_decoder_t decoder;
+    microswim_event_handler_t handler;
+} microswim_event_t;
+
+typedef struct {
+    microswim_message_type_t type;
+    void* payload;
+} microswim_event_message_t;
+
+typedef struct {
     int socket;
     microswim_member_t self;
     microswim_member_t members[MAXIMUM_MEMBERS];
@@ -68,12 +97,14 @@ typedef struct {
     microswim_update_t updates[MAXIMUM_UPDATES];
     microswim_ping_t pings[MAXIMUM_MEMBERS];
     microswim_ping_req_t ping_reqs[MAXIMUM_MEMBERS];
+    microswim_event_t events[MAXIMUM_EVENTS];
     size_t indices[MAXIMUM_MEMBERS];
     size_t member_count;
     size_t confirmed_count;
     size_t update_count;
     size_t ping_count;
     size_t ping_req_count;
+    size_t event_count;
     size_t round_robin_index;
     pthread_mutex_t mutex;
 } microswim_t;

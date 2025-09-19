@@ -28,7 +28,7 @@ void microswim_status_message_construct(
 void microswim_message_handle(microswim_t* ms, unsigned char* buffer, ssize_t len);
 void microswim_ping_req_message_send(microswim_t* ms, microswim_member_t* member, microswim_message_t* message);
 void microswim_ping_message_send(microswim_t* ms, microswim_member_t* member);
-
+microswim_message_type_t microswim_message_type_get(unsigned char* buffer, ssize_t len);
 #ifdef __cplusplus
 }
 #endif
