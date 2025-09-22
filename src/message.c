@@ -5,7 +5,11 @@
 #include "log.h"
 #include "member.h"
 #include "microswim.h"
+#ifdef CUSTOM_CONFIGURATION
+#include "configuration.h"
+#else
 #include "microswim_configuration.h"
+#endif
 #include "ping.h"
 #include "ping_req.h"
 #include "update.h"
