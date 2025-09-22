@@ -5,6 +5,7 @@
 #include "log.h"
 #include "member.h"
 #include "microswim.h"
+#include "microswim_configuration.h"
 #include "ping.h"
 #include "ping_req.h"
 #include "update.h"

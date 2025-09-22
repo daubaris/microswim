@@ -10,6 +10,10 @@ set(CMAKE_CXX_FLAGS "-Wall -Wextra")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
+if(CUSTOM_CONFIGURATION)
+  add_compile_definitions(CUSTOM_CONFIGURATION=1)
+endif()
+
 add_executable(
   darwin
   main.c
@@ -23,5 +27,9 @@ add_executable(
 
 target_include_directories(darwin PUBLIC ${PROJECT_BINARY_DIR}
                                          ${PROJECT_SOURCE_DIR}/include)
+
+if(CUSTOM_CONFIGURATION)
+  target_include_directories(darwin PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+endif()
 
 target_link_libraries(darwin PUBLIC cbor)

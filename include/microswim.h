@@ -9,6 +9,12 @@
 
 #include "constants.h"
 
+#ifdef CUSTOM_CONFIGURATION
+#include "configuration.h"
+#else
+#include "microswim_configuration.h"
+#endif
+
 typedef enum {
     ALIVE = 0,
     SUSPECT,
