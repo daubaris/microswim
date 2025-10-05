@@ -9,6 +9,9 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+/**
+ * @brief Initializes the `microswim_t` structure.
+ */
 void microswim_initialize(microswim_t* ms) {
     *ms = (microswim_t){ .socket = 0,
                          .self = { { 0 } },
@@ -18,6 +21,7 @@ void microswim_initialize(microswim_t* ms) {
                          .pings = { { 0 } },
                          .ping_reqs = { { 0 } },
                          .events = { { 0 } },
+                         .indices = { 0 },
                          .member_count = 0,
                          .confirmed_count = 0,
                          .update_count = 0,
@@ -29,6 +33,12 @@ void microswim_initialize(microswim_t* ms) {
     pthread_mutex_init(&ms->mutex, NULL);
 }
 
+/**
+ * @brief Sets up the socket.
+ *
+ * Assigns the supplied IP address and port to the socket.
+ * Sets the socket to be non-blocking and initializes the initial node.
+ */
 void microswim_socket_setup(microswim_t* ms, char* addr, int port) {
     char uuid[UUID_SIZE];
     microswim_uuid_generate(uuid);
@@ -40,19 +50,17 @@ void microswim_socket_setup(microswim_t* ms, char* addr, int port) {
     ms->self.addr.sin_port = htons(port);
     ms->self.addr.sin_addr.s_addr = inet_addr(addr);
 
-    size_t index = -1;
+    // NOTE: this should not be here.
     microswim_member_t* member = microswim_member_add(ms, ms->self);
     if (member) {
         microswim_index_add(ms);
         microswim_update_add(ms, member);
     }
 
-    // Set the socket to non-blocking mode
     int flags = fcntl(ms->socket, F_GETFL, 0);
     if (fcntl(ms->socket, F_SETFL, flags | O_NONBLOCK) < 0) {
         perror("Failed to set non-blocking");
         close(ms->socket);
-        // TODO: error handling.
         exit(EXIT_FAILURE);
     }
 

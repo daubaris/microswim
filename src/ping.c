@@ -7,6 +7,9 @@
 #include "utils.h"
 #include <stdlib.h>
 
+/**
+ * @brief 
+ */
 microswim_ping_t* microswim_ping_add(microswim_t* ms, microswim_member_t* member) {
     microswim_ping_t* ping = microswim_ping_find(ms, member);
     if (ping != NULL) {

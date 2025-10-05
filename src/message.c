@@ -21,8 +21,12 @@
 #include <errno.h>
 #include <string.h>
 
+/*
+ * @brief Constructs a status message.
+ */
 void microswim_status_message_construct(
     microswim_t* ms, microswim_message_t* message, microswim_message_type_t type, microswim_member_t* member) {
+
     strncpy(message->uuid, ms->self.uuid, UUID_SIZE);
     message->type = type;
     message->addr = ms->self.addr;
@@ -32,16 +36,18 @@ void microswim_status_message_construct(
     message->update_count = 1;
 }
 
+/*
+ * @brief Constructs a gossip message.
+ */
 void microswim_message_construct(
     microswim_t* ms, microswim_message_t* message, microswim_message_type_t type,
     microswim_update_t* updates[MAXIMUM_MEMBERS_IN_AN_UPDATE], size_t update_count) {
 
+    strncpy(message->uuid, ms->self.uuid, UUID_SIZE);
     message->type = type;
+    message->addr = ms->self.addr;
     message->status = ms->self.status;
     message->incarnation = ms->self.incarnation;
-    message->addr = ms->self.addr;
-
-    strncpy(message->uuid, ms->self.uuid, UUID_SIZE);
 
     for (size_t i = 0; i < update_count; i++) {
         message->mu[i] = *updates[i]->member;
@@ -50,6 +56,9 @@ void microswim_message_construct(
     message->update_count = update_count;
 }
 
+/*
+ * @brief Sends a PING message.
+ */
 void microswim_ping_message_send(microswim_t* ms, microswim_member_t* member) {
     microswim_update_t* updates[MAXIMUM_MEMBERS_IN_AN_UPDATE] = { 0 };
     microswim_message_t message = { 0 };
@@ -66,6 +75,9 @@ void microswim_ping_message_send(microswim_t* ms, microswim_member_t* member) {
     }
 }
 
+/*
+ * @brief Sends a status message.
+ */
 void microswim_status_message_send(microswim_t* ms, microswim_member_t* member, microswim_message_t* message) {
     // A message is sent after suspected node is marked as alive.
     unsigned char buffer[BUFFER_SIZE] = { 0 };
@@ -79,6 +91,9 @@ void microswim_status_message_send(microswim_t* ms, microswim_member_t* member, 
     }
 }
 
+/*
+ * @brief Sends a PING_REQ message.
+ */
 void microswim_ping_req_message_send(microswim_t* ms, microswim_member_t* member, microswim_message_t* message) {
     unsigned char buffer[BUFFER_SIZE] = { 0 };
     size_t len = microswim_encode_message(message, buffer, BUFFER_SIZE);
@@ -111,6 +126,9 @@ void microswim_message_print(microswim_message_t* message) {
     }
 }
 
+/*
+ * @brief Extracts information from the message.
+ */
 void microswim_message_extract_members(microswim_t* ms, microswim_message_t* message) {
     microswim_member_t self;
     strncpy(self.uuid, message->uuid, UUID_SIZE);
@@ -126,6 +144,9 @@ void microswim_message_extract_members(microswim_t* ms, microswim_message_t* mes
     }
 }
 
+/*
+ * @brief Sends an ACK message.
+ */
 void microswim_ack_message_send(microswim_t* ms, struct sockaddr_in addr) {
     microswim_update_t* updates[MAXIMUM_MEMBERS_IN_AN_UPDATE] = { 0 };
     microswim_message_t message = { 0 };
@@ -141,6 +162,9 @@ void microswim_ack_message_send(microswim_t* ms, struct sockaddr_in addr) {
     }
 }
 
+/*
+ * @brief Handles PING message.
+ */
 static void microswim_ping_message_handle(microswim_t* ms, microswim_message_t* message) {
     // NOTE: if a member receives a ping, it should send an ack.
     // An ack will piggyback known member information.
@@ -159,6 +183,9 @@ static void microswim_ping_message_handle(microswim_t* ms, microswim_message_t* 
     }
 }
 
+/*
+ * @brief Handles ACK message.
+ */
 void microswim_ack_message_handle(microswim_t* ms, microswim_message_t* message) {
     // TODO: decide what to do when a PING is NULL.
     // It should never happen here, though. But it must be handled.
@@ -201,6 +228,9 @@ void microswim_ack_message_handle(microswim_t* ms, microswim_message_t* message)
     }
 }
 
+/*
+ * @brief Handles the incoming message.
+ */
 void microswim_message_handle(microswim_t* ms, unsigned char* buffer, ssize_t len) {
     microswim_message_t message = { 0 };
     microswim_decode_message(&message, buffer, len);
