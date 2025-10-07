@@ -1,11 +1,16 @@
 #ifndef MICROSWIM_H
 #define MICROSWIM_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <arpa/inet.h>
 #include <pthread.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <string.h>
+#include <sys/socket.h>
 
 #include "constants.h"
 
@@ -126,4 +131,8 @@ size_t* microswim_indices_shift(microswim_t* ms, size_t index);
 
 int microswim_compare_by_count(const void* a, const void* b);
 
+#ifdef __cplusplus
+}
 #endif
+
+#endif // MICROSWIM_H
