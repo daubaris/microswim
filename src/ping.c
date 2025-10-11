@@ -8,7 +8,7 @@
 #include <stdlib.h>
 
 /**
- * @brief 
+ * @brief
  */
 microswim_ping_t* microswim_ping_add(microswim_t* ms, microswim_member_t* member) {
     microswim_ping_t* ping = microswim_ping_find(ms, member);
@@ -17,23 +17,23 @@ microswim_ping_t* microswim_ping_add(microswim_t* ms, microswim_member_t* member
     }
 
     if (member->uuid[0] != '\0') {
-        if (ms->ping_count < MAXIMUM_PINGS) {
-            ms->pings[ms->ping_count].ping_req_deadline =
-                (microswim_milliseconds() + (uint64_t)(PING_REQ_PERIOD * 1000));
-            ms->pings[ms->ping_count].suspect_deadline =
-                (microswim_milliseconds() + (uint64_t)(PROTOCOL_PERIOD * 1000));
-            ms->pings[ms->ping_count].member = member;
-            ms->pings[ms->ping_count].ping_req = false;
-
-            return &ms->pings[ms->ping_count++];
-        } else {
-            LOG_WARN(
+        if (ms->ping_count > MAXIMUM_PINGS) {
+            LOG_ERROR(
                 "Unable to add a new ping: the maximum limit (%d) has been "
                 "reached. Consider increasing MAXIMUM_PINGS to allow "
                 "additional members.",
                 MAXIMUM_PINGS);
             return NULL;
         }
+
+        ms->pings[ms->ping_count].ping_req_deadline =
+            (microswim_milliseconds() + (uint64_t)(PING_REQ_PERIOD * 1000));
+        ms->pings[ms->ping_count].suspect_deadline =
+            (microswim_milliseconds() + (uint64_t)(PROTOCOL_PERIOD * 1000));
+        ms->pings[ms->ping_count].member = member;
+        ms->pings[ms->ping_count].ping_req = false;
+
+        return &ms->pings[ms->ping_count++];
     }
 
     return NULL;
@@ -41,7 +41,7 @@ microswim_ping_t* microswim_ping_add(microswim_t* ms, microswim_member_t* member
 
 microswim_ping_t* microswim_ping_find(microswim_t* ms, microswim_member_t* member) {
     for (int i = 0; i < ms->ping_count; i++) {
-        if (strncmp(ms->pings[i].member->uuid, member->uuid, UUID_SIZE) == 0) {
+        if (strncmp((char*)ms->pings[i].member->uuid, (char*)member->uuid, UUID_SIZE) == 0) {
             return &ms->pings[i];
         }
     }
@@ -76,10 +76,12 @@ void microswim_pings_check(microswim_t* ms) {
             size_t members[FAILURE_DETECTION_GROUP];
             size_t count = microswim_get_ping_req_candidates(ms, members);
             for (int j = 0; j < count; j++) {
-                microswim_member_t* member = &ms->members[members[j]];
+                unsigned char buffer[BUFFER_SIZE] = { 0 };
                 microswim_message_t message = { 0 };
+                microswim_member_t* member = &ms->members[members[j]];
                 microswim_status_message_construct(ms, &message, PING_REQ_MESSAGE, ms->pings[i].member);
-                microswim_ping_req_message_send(ms, member, &message);
+                size_t length = microswim_encode_message(&message, buffer, BUFFER_SIZE);
+                microswim_message_send(ms, member, (const char*)buffer, length);
                 ms->pings[i].ping_req = true;
                 // NOTE: No need to remove the ping here. It'll be done after
                 // the suspicion deadline is reached.

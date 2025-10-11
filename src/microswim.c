@@ -36,26 +36,13 @@ void microswim_initialize(microswim_t* ms) {
 /**
  * @brief Sets up the socket.
  *
- * Assigns the supplied IP address and port to the socket.
- * Sets the socket to be non-blocking and initializes the initial node.
+ * Assigns the supplied IP address and port to the socket and sets it to be non-blocking.
  */
 void microswim_socket_setup(microswim_t* ms, char* addr, int port) {
-    char uuid[UUID_SIZE];
-    microswim_uuid_generate(uuid);
-    LOG_DEBUG("Local UUID: %s", uuid);
-
     ms->socket = socket(AF_INET, SOCK_DGRAM, 0);
-    strncpy(ms->self.uuid, uuid, UUID_SIZE);
     ms->self.addr.sin_family = AF_INET;
     ms->self.addr.sin_port = htons(port);
     ms->self.addr.sin_addr.s_addr = inet_addr(addr);
-
-    // NOTE: this should not be here.
-    microswim_member_t* member = microswim_member_add(ms, ms->self);
-    if (member) {
-        microswim_index_add(ms);
-        microswim_update_add(ms, member);
-    }
 
     int flags = fcntl(ms->socket, F_GETFL, 0);
     if (fcntl(ms->socket, F_SETFL, flags | O_NONBLOCK) < 0) {

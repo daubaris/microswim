@@ -39,7 +39,7 @@ microswim_member_t* microswim_member_retrieve(microswim_t* ms) {
             microswim_indices_shuffle(ms);
         }
 
-        if (strncmp(ms->self.uuid, member->uuid, UUID_SIZE) != 0) {
+        if (strncmp((char*)ms->self.uuid, (char*)member->uuid, UUID_SIZE) != 0) {
             return member;
         }
 
@@ -67,7 +67,7 @@ microswim_member_t* microswim_member_add(microswim_t* ms, microswim_member_t mem
     }
 
     microswim_member_t* slot = &ms->members[ms->member_count++];
-    strncpy(slot->uuid, member.uuid, UUID_SIZE);
+    strncpy((char*)slot->uuid, (char*)member.uuid, UUID_SIZE);
     slot->addr = member.addr;
     slot->incarnation = member.incarnation;
     slot->status = member.incarnation;
@@ -92,11 +92,11 @@ microswim_member_t* microswim_member_find(microswim_t* ms, microswim_member_t* m
             int c = microswim_member_address_compare(&ms->members[i], member);
             if (c == (SIN_FAMILY | SIN_PORT | SIN_ADDR)) {
                 LOG_DEBUG("Updated member's UUID");
-                strncpy(ms->members[i].uuid, member->uuid, UUID_SIZE);
+                strncpy((char*)ms->members[i].uuid, (char*)member->uuid, UUID_SIZE);
             }
         }
 
-        if (strncmp(member->uuid, ms->members[i].uuid, UUID_SIZE) == 0) {
+        if (strncmp((char*)member->uuid, (char*)ms->members[i].uuid, UUID_SIZE) == 0) {
             return &ms->members[i];
         }
     }
@@ -111,7 +111,7 @@ microswim_member_t* microswim_member_find(microswim_t* ms, microswim_member_t* m
  */
 microswim_member_t* microswim_member_confirmed_find(microswim_t* ms, microswim_member_t* member) {
     for (size_t i = 0; i < ms->confirmed_count; i++) {
-        if (strncmp(member->uuid, ms->confirmed[i].uuid, UUID_SIZE) == 0) {
+        if (strncmp((char*)member->uuid, (char*)ms->confirmed[i].uuid, UUID_SIZE) == 0) {
             return &ms->confirmed[i];
         }
     }
@@ -142,7 +142,7 @@ void microswim_members_shift(microswim_t* ms, size_t index) {
  */
 void microswim_member_update(microswim_t* ms, microswim_member_t* ex, microswim_member_t* nw) {
     // NOTE: this should probably move somewhere else.
-    if (strncmp(ms->self.uuid, nw->uuid, UUID_SIZE) == 0 && (nw->status == SUSPECT)) {
+    if (strncmp((char*)ms->self.uuid, (char*)nw->uuid, UUID_SIZE) == 0 && (nw->status == SUSPECT)) {
         // TODO: check all the ms->self references.
         ms->self.incarnation = nw->incarnation + 1;
         ms->self.status = ALIVE;
@@ -152,7 +152,11 @@ void microswim_member_update(microswim_t* ms, microswim_member_t* ex, microswim_
         microswim_message_t message = { 0 };
         microswim_status_message_construct(ms, &message, ALIVE_MESSAGE, ex);
         microswim_member_t* recipient = microswim_member_retrieve(ms);
-        microswim_status_message_send(ms, recipient, &message);
+        if (recipient != NULL) {
+            unsigned char buffer[BUFFER_SIZE] = { 0 };
+            size_t length = microswim_encode_message(&message, buffer, BUFFER_SIZE);
+            microswim_message_send(ms, recipient, (const char*)buffer, length);
+        }
 
         return;
     }
@@ -168,7 +172,7 @@ void microswim_member_update(microswim_t* ms, microswim_member_t* ex, microswim_
             ex->timeout = (microswim_milliseconds() + (uint64_t)(SUSPECT_TIMEOUT * 1000));
 
             microswim_member_t member = { 0 };
-            strncpy(member.uuid, ex->uuid, UUID_SIZE);
+            strncpy((char*)member.uuid, (char*)ex->uuid, UUID_SIZE);
             microswim_ping_t* ping = microswim_ping_find(ms, &member);
             if (ping != NULL) {
                 microswim_ping_remove(ms, ping);
@@ -187,7 +191,7 @@ void microswim_member_update(microswim_t* ms, microswim_member_t* ex, microswim_
             ex->timeout = (microswim_milliseconds() + (uint64_t)(SUSPECT_TIMEOUT * 1000));
 
             microswim_member_t member = { 0 };
-            strncpy(member.uuid, ex->uuid, UUID_SIZE);
+            strncpy((char*)member.uuid, (char*)ex->uuid, UUID_SIZE);
             microswim_ping_t* ping = microswim_ping_find(ms, &member);
             if (ping != NULL) {
                 microswim_ping_remove(ms, ping);
@@ -204,7 +208,7 @@ void microswim_member_update(microswim_t* ms, microswim_member_t* ex, microswim_
             ex->incarnation = nw->incarnation;
 
             microswim_member_t member = { 0 };
-            strncpy(member.uuid, ex->uuid, UUID_SIZE);
+            strncpy((char*)member.uuid, (char*)ex->uuid, UUID_SIZE);
             microswim_ping_t* ping = microswim_ping_find(ms, &member);
             if (ping != NULL) {
                 microswim_ping_remove(ms, ping);
@@ -256,20 +260,21 @@ microswim_member_t* microswim_member_move(microswim_t* ms, microswim_member_t* m
  * @brief Marks the member alive and issues a status message in case the member was marked as suspect.
  */
 void microswim_member_mark_alive(microswim_t* ms, microswim_member_t* member) {
-    (void)ms;
-
     microswim_member_status_t status = member->status;
-
     member->status = ALIVE;
     member->timeout = (microswim_milliseconds() + (uint64_t)(SUSPECT_TIMEOUT * 1000));
-
     LOG_INFO("Member: %s was marked alive", member->uuid);
 
     if (status == SUSPECT) {
         microswim_message_t message = { 0 };
         microswim_status_message_construct(ms, &message, ALIVE_MESSAGE, member);
+
         microswim_member_t* recipient = microswim_member_retrieve(ms);
-        microswim_status_message_send(ms, recipient, &message);
+        if (recipient != NULL) {
+            unsigned char buffer[BUFFER_SIZE] = { 0 };
+            size_t length = microswim_encode_message(&message, buffer, BUFFER_SIZE);
+            microswim_message_send(ms, recipient, (const char*)buffer, length);
+        }
     }
 }
 
@@ -278,13 +283,19 @@ void microswim_member_mark_alive(microswim_t* ms, microswim_member_t* member) {
  */
 void microswim_member_mark_suspect(microswim_t* ms, microswim_member_t* member) {
     if (member->status == ALIVE) {
-        LOG_INFO("Member: %s was marked suspect", member->uuid);
         member->status = SUSPECT;
         member->timeout = (microswim_milliseconds() + (uint64_t)(SUSPECT_TIMEOUT * 1000));
+        LOG_INFO("Member: %s was marked suspect", member->uuid);
+
         microswim_message_t message = { 0 };
         microswim_status_message_construct(ms, &message, SUSPECT_MESSAGE, member);
+
         microswim_member_t* recipient = microswim_member_retrieve(ms);
-        microswim_status_message_send(ms, recipient, &message);
+        if (recipient != NULL) {
+            unsigned char buffer[BUFFER_SIZE] = { 0 };
+            size_t length = microswim_encode_message(&message, buffer, BUFFER_SIZE);
+            microswim_message_send(ms, recipient, (const char*)buffer, length);
+        }
     }
 }
 
@@ -292,8 +303,8 @@ void microswim_member_mark_suspect(microswim_t* ms, microswim_member_t* member) 
  * @brief Marks the member as confirmed and issues a status message.
  */
 void microswim_member_mark_confirmed(microswim_t* ms, microswim_member_t* member) {
-    LOG_INFO("Member: %s was marked confirmed", member->uuid);
     member->status = CONFIRMED;
+    LOG_INFO("Member: %s was marked confirmed", member->uuid);
 
     microswim_ping_t* ping = microswim_ping_find(ms, member);
     if (ping != NULL) {
@@ -304,8 +315,13 @@ void microswim_member_mark_confirmed(microswim_t* ms, microswim_member_t* member
 
     microswim_message_t message = { 0 };
     microswim_status_message_construct(ms, &message, CONFIRM_MESSAGE, member);
+
     microswim_member_t* recipient = microswim_member_retrieve(ms);
-    microswim_status_message_send(ms, recipient, &message);
+    if (recipient != NULL) {
+        unsigned char buffer[BUFFER_SIZE] = { 0 };
+        size_t length = microswim_encode_message(&message, buffer, BUFFER_SIZE);
+        microswim_message_send(ms, recipient, (const char*)buffer, length);
+    }
 }
 
 /**
@@ -338,7 +354,7 @@ microswim_member_t* microswim_member_confirmed_add(microswim_t* ms, microswim_me
     }
 
     microswim_member_t* slot = &ms->confirmed[ms->confirmed_count++];
-    strncpy(slot->uuid, member.uuid, UUID_SIZE);
+    strncpy((char*)slot->uuid, (char*)member.uuid, UUID_SIZE);
     slot->addr = member.addr;
     slot->incarnation = member.incarnation;
     slot->status = member.status;

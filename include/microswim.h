@@ -39,7 +39,7 @@ typedef enum {
 } microswim_message_type_t;
 
 typedef struct {
-    char uuid[UUID_SIZE];
+    uint8_t uuid[UUID_SIZE];
     struct sockaddr_in addr;
     microswim_member_status_t status;
     size_t incarnation;
@@ -66,21 +66,21 @@ typedef struct {
 
 typedef struct {
     microswim_message_type_t type;
-    char uuid[UUID_SIZE];
+    uint8_t uuid[UUID_SIZE];
     struct sockaddr_in addr;
     microswim_member_status_t status;
-    int incarnation;
+    size_t incarnation;
     microswim_member_t mu[MAXIMUM_UPDATES];
-    int update_count;
+    size_t update_count;
 } microswim_message_t;
 
 typedef struct {
-    char uuid[UUID_SIZE];
+    uint8_t uuid[UUID_SIZE];
     struct sockaddr_in addr;
     microswim_member_status_t status;
-    int incarnation;
+    size_t incarnation;
     microswim_member_t mu[MAXIMUM_UPDATES];
-    int update_count;
+    size_t update_count;
 } microswim_gossip_message_t;
 
 typedef size_t (*microswim_event_encoder_t)(void* data, void* output, size_t size);

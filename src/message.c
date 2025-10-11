@@ -1,7 +1,9 @@
 #include "message.h"
 #include "cbor.h"
 #include "constants.h"
+#ifdef MICROSWIM_JSON
 #include "jsmn.h"
+#endif
 #include "log.h"
 #include "member.h"
 #include "microswim.h"
@@ -14,10 +16,12 @@
 #include "ping_req.h"
 #include "update.h"
 #include "utils.h"
+#ifdef MICROSWIM_CBOR
 #include <cbor/arrays.h>
 #include <cbor/maps.h>
 #include <cbor/serialization.h>
 #include <cbor/strings.h>
+#endif
 #include <errno.h>
 #include <string.h>
 
@@ -27,7 +31,7 @@
 void microswim_status_message_construct(
     microswim_t* ms, microswim_message_t* message, microswim_message_type_t type, microswim_member_t* member) {
 
-    strncpy(message->uuid, ms->self.uuid, UUID_SIZE);
+    strncpy((char*)message->uuid, (char*)ms->self.uuid, UUID_SIZE);
     message->type = type;
     message->addr = ms->self.addr;
     message->status = ms->self.status;
@@ -43,7 +47,7 @@ void microswim_message_construct(
     microswim_t* ms, microswim_message_t* message, microswim_message_type_t type,
     microswim_update_t* updates[MAXIMUM_MEMBERS_IN_AN_UPDATE], size_t update_count) {
 
-    strncpy(message->uuid, ms->self.uuid, UUID_SIZE);
+    strncpy((char*)message->uuid, (char*)ms->self.uuid, UUID_SIZE);
     message->type = type;
     message->addr = ms->self.addr;
     message->status = ms->self.status;
@@ -56,49 +60,9 @@ void microswim_message_construct(
     message->update_count = update_count;
 }
 
-/*
- * @brief Sends a PING message.
- */
-void microswim_ping_message_send(microswim_t* ms, microswim_member_t* member) {
-    microswim_update_t* updates[MAXIMUM_MEMBERS_IN_AN_UPDATE] = { 0 };
-    microswim_message_t message = { 0 };
-    unsigned char buffer[BUFFER_SIZE] = { 0 };
-    size_t update_count = microswim_updates_retrieve(ms, updates);
-    microswim_message_construct(ms, &message, PING_MESSAGE, updates, update_count);
-    size_t len = microswim_encode_message(&message, buffer, BUFFER_SIZE);
-
-    LOG_DEBUG("SENDING A PING TO: %s", member->uuid);
-    ssize_t result = sendto(
-        ms->socket, (const char*)buffer, len, 0, (struct sockaddr*)(&member->addr), sizeof(member->addr));
-    if (result < 0) {
-        LOG_ERROR("sendto failed: %s\n", strerror(errno));
-    }
-}
-
-/*
- * @brief Sends a status message.
- */
-void microswim_status_message_send(microswim_t* ms, microswim_member_t* member, microswim_message_t* message) {
-    // A message is sent after suspected node is marked as alive.
-    unsigned char buffer[BUFFER_SIZE] = { 0 };
-    if (member != NULL) {
-        size_t len = microswim_encode_message(message, buffer, BUFFER_SIZE);
-        ssize_t result =
-            sendto(ms->socket, buffer, len, 0, (struct sockaddr*)(&member->addr), sizeof(member->addr));
-        if (result < 0) {
-            LOG_ERROR("sendto failed: %s\n", strerror(errno));
-        }
-    }
-}
-
-/*
- * @brief Sends a PING_REQ message.
- */
-void microswim_ping_req_message_send(microswim_t* ms, microswim_member_t* member, microswim_message_t* message) {
-    unsigned char buffer[BUFFER_SIZE] = { 0 };
-    size_t len = microswim_encode_message(message, buffer, BUFFER_SIZE);
+void microswim_message_send(microswim_t* ms, microswim_member_t* member, const char* buffer, size_t length) {
     ssize_t result =
-        sendto(ms->socket, buffer, len, 0, (struct sockaddr*)(&member->addr), sizeof(member->addr));
+        sendto(ms->socket, buffer, length, 0, (struct sockaddr*)(&member->addr), sizeof(member->addr));
     if (result < 0) {
         LOG_ERROR("sendto failed: %s\n", strerror(errno));
     }
@@ -106,7 +70,7 @@ void microswim_ping_req_message_send(microswim_t* ms, microswim_member_t* member
 
 void microswim_message_print(microswim_message_t* message) {
     LOG_DEBUG(
-        "MESSAGE: %s, FROM: %s, STATUS: %d, INCARNATION: %d, URI: %d",
+        "MESSAGE: %s, FROM: %s, STATUS: %d, INCARNATION: %zu, URI: %d",
         (message->type == ALIVE_MESSAGE ?
              "ALIVE MESSAGE" :
              (message->type == SUSPECT_MESSAGE ?
@@ -131,7 +95,7 @@ void microswim_message_print(microswim_message_t* message) {
  */
 void microswim_message_extract_members(microswim_t* ms, microswim_message_t* message) {
     microswim_member_t self;
-    strncpy(self.uuid, message->uuid, UUID_SIZE);
+    strncpy((char*)self.uuid, (char*)message->uuid, UUID_SIZE);
     self.addr = message->addr;
     self.status = message->status;
     self.incarnation = message->incarnation;
@@ -145,7 +109,7 @@ void microswim_message_extract_members(microswim_t* ms, microswim_message_t* mes
 }
 
 /*
- * @brief Sends an ACK message.
+ * @brief Sends an ACK message. TODO: refactor to use `microswim_message_send function.
  */
 void microswim_ack_message_send(microswim_t* ms, struct sockaddr_in addr) {
     microswim_update_t* updates[MAXIMUM_MEMBERS_IN_AN_UPDATE] = { 0 };
@@ -171,7 +135,7 @@ static void microswim_ping_message_handle(microswim_t* ms, microswim_message_t* 
     microswim_ack_message_send(ms, message->addr);
     // A bit of a hack. Could be done cleaner.
     microswim_member_t temp = { 0 };
-    strncpy(temp.uuid, message->uuid, UUID_SIZE);
+    strncpy((char*)temp.uuid, (char*)message->uuid, UUID_SIZE);
     microswim_ping_t* ping = microswim_ping_find(ms, &temp);
     if (ping != NULL) {
         microswim_ping_remove(ms, ping);
@@ -190,7 +154,7 @@ void microswim_ack_message_handle(microswim_t* ms, microswim_message_t* message)
     // TODO: decide what to do when a PING is NULL.
     // It should never happen here, though. But it must be handled.
     microswim_member_t member = { 0 };
-    strncpy(member.uuid, message->uuid, UUID_SIZE);
+    strncpy((char*)member.uuid, (char*)message->uuid, UUID_SIZE);
     microswim_ping_t* ping = microswim_ping_find(ms, &member);
 
     if (ping != NULL && ping->member->uuid[0] != '\0') {
@@ -198,28 +162,20 @@ void microswim_ack_message_handle(microswim_t* ms, microswim_message_t* message)
 
         microswim_ping_req_t* ping_req = NULL;
         for (int i = 0; i < ms->ping_req_count; i++) {
-            if (strncmp(message->uuid, ms->ping_reqs[i].target->uuid, UUID_SIZE) == 0) {
+            if (strncmp((char*)message->uuid, (char*)ms->ping_reqs[i].target->uuid, UUID_SIZE) == 0) {
                 ping_req = &ms->ping_reqs[i];
                 microswim_update_t* updates[MAXIMUM_MEMBERS_IN_AN_UPDATE] = { 0 };
                 microswim_message_t message = { 0 };
-
                 unsigned char buffer[BUFFER_SIZE] = { 0 };
                 int update_count = microswim_updates_retrieve(ms, updates);
                 microswim_message_construct(ms, &message, ACK_MESSAGE, updates, update_count);
                 message.status = ping_req->target->status;
                 message.incarnation = ping_req->target->incarnation;
                 message.addr = ping_req->target->addr;
+                strncpy((char*)message.uuid, (char*)ping_req->target->uuid, UUID_SIZE);
+                size_t length = microswim_encode_message(&message, buffer, BUFFER_SIZE);
 
-                strncpy(message.uuid, ping_req->target->uuid, UUID_SIZE);
-                size_t len = microswim_encode_message(&message, buffer, BUFFER_SIZE);
-
-                ssize_t result = sendto(
-                    ms->socket, buffer, len, 0, (struct sockaddr*)(&ping_req->source->addr),
-                    sizeof(ping_req->source->addr));
-                if (result < 0) {
-                    LOG_ERROR("sendto failed: %s\n", strerror(errno));
-                }
-
+                microswim_message_send(ms, ping_req->source, (const char*)buffer, length);
                 microswim_ping_req_remove(ms, ping_req);
             }
         }
@@ -294,7 +250,7 @@ size_t microswim_cbor_encode_message(microswim_message_t* message, unsigned char
         origin_map,
         (struct cbor_pair){
             .key = cbor_move(cbor_build_string("uuid")),
-            .value = cbor_move(message->uuid[0] != '\0' ? cbor_build_string(message->uuid) : cbor_new_null()) });
+            .value = cbor_move(message->uuid[0] != '\0' ? cbor_build_string((char*)message->uuid) : cbor_new_null()) });
     success &= cbor_map_add(
         origin_map,
         (struct cbor_pair){ .key = cbor_move(cbor_build_string("uri")),
@@ -321,7 +277,7 @@ size_t microswim_cbor_encode_message(microswim_message_t* message, unsigned char
         int success = cbor_map_add(
             update_map,
             (struct cbor_pair){ .key = cbor_move(cbor_build_string("uuid")),
-                                .value = cbor_move(cbor_build_string(message->mu[i].uuid)) });
+                                .value = cbor_move(cbor_build_string((char*)message->mu[i].uuid)) });
         success &= cbor_map_add(
             update_map,
             (struct cbor_pair){ .key = cbor_move(cbor_build_string("uri")),

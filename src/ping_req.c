@@ -3,11 +3,12 @@
 #include "member.h"
 #include "message.h"
 #include "ping.h"
+#include "update.h"
 #include "utils.h"
 
 void microswim_ping_req_message_handle(microswim_t* ms, microswim_message_t* message) {
     microswim_member_t temp = { 0 };
-    strncpy(temp.uuid, message->uuid, UUID_SIZE);
+    strncpy((char*)temp.uuid, (char*)message->uuid, UUID_SIZE);
     microswim_member_t* source = microswim_member_find(ms, &temp);
     microswim_member_t* target = microswim_member_find(ms, &message->mu[0]);
 
@@ -20,15 +21,22 @@ void microswim_ping_req_message_handle(microswim_t* ms, microswim_message_t* mes
         return;
     }
 
-    microswim_ping_message_send(ms, target);
+    unsigned char buffer[BUFFER_SIZE] = { 0 };
+    microswim_message_t ping_message = { 0 };
+    microswim_update_t* updates[MAXIMUM_MEMBERS_IN_AN_UPDATE] = { 0 };
+    size_t update_count = microswim_updates_retrieve(ms, updates);
+    microswim_message_construct(ms, &ping_message, PING_MESSAGE, updates, update_count);
+    size_t length = microswim_encode_message(&ping_message, buffer, BUFFER_SIZE);
+
+    microswim_message_send(ms, target, (const char*)buffer, length);
     microswim_ping_req_add(ms, source, target);
 }
 
 microswim_ping_req_t*
     microswim_ping_req_find(microswim_t* ms, microswim_member_t* source, microswim_member_t* target) {
     for (int i = 0; i < ms->ping_req_count; i++) {
-        if (strncmp(ms->ping_reqs[i].source->uuid, source->uuid, UUID_SIZE) == 0 &&
-            strncmp(ms->ping_reqs[i].target->uuid, target->uuid, UUID_SIZE) == 0) {
+        if (strncmp((char*)ms->ping_reqs[i].source->uuid, (char*)source->uuid, UUID_SIZE) == 0 &&
+            strncmp((char*)ms->ping_reqs[i].target->uuid, (char*)target->uuid, UUID_SIZE) == 0) {
             return &ms->ping_reqs[i];
         }
     }

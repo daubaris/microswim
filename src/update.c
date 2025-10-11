@@ -3,9 +3,12 @@
 #include "microswim.h"
 #include <stdlib.h>
 
+/**
+ * @brief Adds an update to the central update array, referencing the supplied member.
+ */
 microswim_update_t* microswim_update_add(microswim_t* ms, microswim_member_t* member) {
     if (ms->update_count > MAXIMUM_UPDATES) {
-        LOG_ERROR("Cannot add more than %d members\n", MAXIMUM_UPDATES);
+        LOG_ERROR("Cannot add more than %d updates\n", MAXIMUM_UPDATES);
         return NULL;
     }
 
@@ -15,9 +18,12 @@ microswim_update_t* microswim_update_add(microswim_t* ms, microswim_member_t* me
     return &ms->updates[ms->update_count++];
 }
 
+/**
+ * @brief Finds update referencing the supplied member from the central update array.
+ */
 microswim_update_t* microswim_update_find(microswim_t* ms, microswim_member_t* member) {
     for (int i = 0; i < ms->update_count; i++) {
-        if (strncmp(ms->updates[i].member->uuid, member->uuid, UUID_SIZE) == 0) {
+        if (strncmp((char*)ms->updates[i].member->uuid, (char*)member->uuid, UUID_SIZE) == 0) {
             return &ms->updates[i];
         }
     }
@@ -25,6 +31,9 @@ microswim_update_t* microswim_update_find(microswim_t* ms, microswim_member_t* m
     return NULL;
 }
 
+/**
+ * @brief Selects and retrieves the least used updates.
+ */
 size_t microswim_updates_retrieve(microswim_t* ms, microswim_update_t* updates[MAXIMUM_MEMBERS_IN_AN_UPDATE]) {
     qsort(ms->updates, ms->update_count, sizeof(microswim_update_t), microswim_compare_by_count);
     size_t count = 0;
