@@ -9,8 +9,8 @@ extern "C" {
 #include <stddef.h>
 #include <stdint.h>
 
-size_t microswim_random(size_t size);
 uint64_t microswim_milliseconds();
+size_t microswim_random(size_t size);
 void microswim_uuid_generate(char* uuid);
 void microswim_sockaddr_to_uri(struct sockaddr_in* addr, char* buffer, size_t buffer_size);
 

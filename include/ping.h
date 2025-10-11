@@ -9,9 +9,9 @@ extern "C" {
 
 microswim_ping_t* microswim_ping_add(microswim_t* ms, microswim_member_t* member);
 microswim_ping_t* microswim_ping_find(microswim_t* ms, microswim_member_t* member);
-void microswim_ping_remove(microswim_t* ms, microswim_ping_t* ping);
 
 void microswim_pings_check(microswim_t* ms);
+void microswim_ping_remove(microswim_t* ms, microswim_ping_t* ping);
 
 #ifdef __cplusplus
 }
