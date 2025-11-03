@@ -18,3 +18,6 @@ void microswim_event_register(microswim_t* ms, microswim_event_t event) {
             MAXIMUM_EVENTS);
     }
 }
+
+void microswim_event_dispatch(microswim_t* ms, char* event_name, void* data) {
+}

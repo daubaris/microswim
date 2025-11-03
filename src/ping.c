@@ -5,7 +5,6 @@
 #include "message.h"
 #include "microswim.h"
 #include "utils.h"
-#include <stdlib.h>
 
 /**
  * @brief

@@ -74,18 +74,9 @@ typedef struct {
     size_t update_count;
 } microswim_message_t;
 
-typedef struct {
-    uint8_t uuid[UUID_SIZE];
-    struct sockaddr_in addr;
-    microswim_member_status_t status;
-    size_t incarnation;
-    microswim_member_t mu[MAXIMUM_UPDATES];
-    size_t update_count;
-} microswim_gossip_message_t;
-
-typedef size_t (*microswim_event_encoder_t)(void* data, void* output, size_t size);
-typedef bool (*microswim_event_decoder_t)(void* data, void* output);
-typedef void (*microswim_event_handler_t)(void* data);
+typedef size_t (*microswim_event_encoder_t)(void* output, void* input, size_t size);
+typedef void (*microswim_event_decoder_t)(void* output, void* input, size_t size);
+typedef void (*microswim_event_handler_t)(void* ms, void* buffer, size_t length);
 
 typedef struct {
     uint8_t type;

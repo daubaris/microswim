@@ -5,12 +5,12 @@
 extern "C" {
 #endif
 
-#include "microswim.h"
+#include <arpa/inet.h>
 #include <stddef.h>
 #include <stdint.h>
 
 uint64_t microswim_milliseconds();
-size_t microswim_random(size_t size);
+size_t microswim_random();
 void microswim_uuid_generate(char* uuid);
 void microswim_sockaddr_to_uri(struct sockaddr_in* addr, char* buffer, size_t buffer_size);
 

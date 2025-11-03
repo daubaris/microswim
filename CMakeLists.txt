@@ -33,3 +33,22 @@ endif()
 if(BUILD_TESTS)
   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tests)
 endif()
+
+if(BUILD_LIBRARY)
+  add_library(
+    microswim
+    ${PROJECT_SOURCE_DIR}/src/microswim.c
+    ${PROJECT_SOURCE_DIR}/src/member.c
+    ${PROJECT_SOURCE_DIR}/src/message.c
+    ${PROJECT_SOURCE_DIR}/src/ping.c
+    ${PROJECT_SOURCE_DIR}/src/ping_req.c
+    ${PROJECT_SOURCE_DIR}/src/update.c
+    ${PROJECT_SOURCE_DIR}/src/event.c)
+
+  target_include_directories(microswim
+                             PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+  if(CBOR)
+    target_link_libraries(microswim PUBLIC cbor)
+  endif()
+endif()

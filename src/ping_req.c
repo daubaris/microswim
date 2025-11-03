@@ -2,7 +2,6 @@
 #include "log.h"
 #include "member.h"
 #include "message.h"
-#include "ping.h"
 #include "update.h"
 #include "utils.h"
 

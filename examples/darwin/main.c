@@ -5,6 +5,7 @@
 #include "ping.h"
 #include "ping_req.h"
 #include "update.h"
+#include "utils.h"
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -25,7 +26,7 @@ void* listener(void* params) {
 
         if (bytes > 0) {
             buffer[bytes] = '\0';
-            microswim_message_handle(ms, buffer, bytes);
+            microswim_message_handle(ms, buffer, bytes, NULL);
         }
 
         pthread_mutex_unlock(&ms->mutex);
@@ -42,7 +43,14 @@ void* failure_detection(void* params) {
         for (int i = 0; i < GOSSIP_FANOUT; i++) {
             microswim_member_t* member = microswim_member_retrieve(ms);
             if (member != NULL) {
-                microswim_ping_message_send(ms, member);
+                unsigned char buffer[BUFFER_SIZE] = { 0 };
+                microswim_message_t message = { 0 };
+                microswim_update_t* updates[MAXIMUM_MEMBERS_IN_AN_UPDATE] = { 0 };
+                size_t update_count = microswim_updates_retrieve(ms, updates);
+                microswim_message_construct(ms, &message, PING_MESSAGE, updates, update_count);
+                size_t length = microswim_encode_message(&message, buffer, BUFFER_SIZE);
+
+                microswim_message_send(ms, member, (const char*)buffer, length);
                 microswim_ping_add(ms, member);
             }
         }
@@ -73,8 +81,17 @@ int main(int argc, char** argv) {
     microswim_initialize(&ms);
     microswim_socket_setup(&ms, argv[1], atoi(argv[2]));
 
-    microswim_member_t member;
+    char uuid[UUID_SIZE];
+    microswim_uuid_generate(uuid);
+    strncpy((char*)ms.self.uuid, uuid, UUID_SIZE);
 
+    microswim_member_t* self = microswim_member_add(&ms, ms.self);
+    if (self) {
+        microswim_index_add(&ms);
+        microswim_update_add(&ms, self);
+    }
+
+    microswim_member_t member;
     member.uuid[0] = '\0';
     member.addr.sin_family = AF_INET;
     member.addr.sin_port = htons(atoi(argv[4]));
@@ -88,8 +105,8 @@ int main(int argc, char** argv) {
 
     microswim_member_t* remote = microswim_member_add(&ms, member);
     if (remote) {
-        microswim_update_add(&ms, remote);
         microswim_index_add(&ms);
+        microswim_update_add(&ms, remote);
     }
 
     pthread_t fd_thread, pl_thread;

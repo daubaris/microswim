@@ -6,7 +6,9 @@
 #include "ping.h"
 #include "update.h"
 #include "utils.h"
+#ifndef EMBEDDED
 #include <stdlib.h>
+#endif
 
 /**
  * @brief Returns a pointer to the next member in a round-robin sequence.
@@ -263,7 +265,7 @@ void microswim_member_mark_alive(microswim_t* ms, microswim_member_t* member) {
     microswim_member_status_t status = member->status;
     member->status = ALIVE;
     member->timeout = (microswim_milliseconds() + (uint64_t)(SUSPECT_TIMEOUT * 1000));
-    LOG_INFO("Member: %s was marked alive", member->uuid);
+    LOG_DEBUG("Member: %s was marked alive", member->uuid);
 
     if (status == SUSPECT) {
         microswim_message_t message = { 0 };
@@ -285,7 +287,7 @@ void microswim_member_mark_suspect(microswim_t* ms, microswim_member_t* member) 
     if (member->status == ALIVE) {
         member->status = SUSPECT;
         member->timeout = (microswim_milliseconds() + (uint64_t)(SUSPECT_TIMEOUT * 1000));
-        LOG_INFO("Member: %s was marked suspect", member->uuid);
+        LOG_DEBUG("Member: %s was marked suspect", member->uuid);
 
         microswim_message_t message = { 0 };
         microswim_status_message_construct(ms, &message, SUSPECT_MESSAGE, member);
@@ -304,7 +306,7 @@ void microswim_member_mark_suspect(microswim_t* ms, microswim_member_t* member) 
  */
 void microswim_member_mark_confirmed(microswim_t* ms, microswim_member_t* member) {
     member->status = CONFIRMED;
-    LOG_INFO("Member: %s was marked confirmed", member->uuid);
+    LOG_DEBUG("Member: %s was marked confirmed", member->uuid);
 
     microswim_ping_t* ping = microswim_ping_find(ms, member);
     if (ping != NULL) {

@@ -1,7 +1,9 @@
 #include "update.h"
 #include "log.h"
 #include "microswim.h"
+#ifndef EMBEDDED
 #include <stdlib.h>
+#endif
 
 /**
  * @brief Adds an update to the central update array, referencing the supplied member.
@@ -31,11 +33,25 @@ microswim_update_t* microswim_update_find(microswim_t* ms, microswim_member_t* m
     return NULL;
 }
 
+static void microswim_sort_updates_by_count(microswim_update_t* updates, size_t count) {
+    for (size_t i = 1; i < count; ++i) {
+        microswim_update_t key = updates[i];
+        size_t j = i;
+
+        while (j > 0 && updates[j - 1].count > key.count) {
+            updates[j] = updates[j - 1];
+            j--;
+        }
+
+        updates[j] = key;
+    }
+}
+
 /**
  * @brief Selects and retrieves the least used updates.
  */
 size_t microswim_updates_retrieve(microswim_t* ms, microswim_update_t* updates[MAXIMUM_MEMBERS_IN_AN_UPDATE]) {
-    qsort(ms->updates, ms->update_count, sizeof(microswim_update_t), microswim_compare_by_count);
+    microswim_sort_updates_by_count(ms->updates, ms->update_count);
     size_t count = 0;
 
     for (size_t j = 0; (j < ms->update_count && j < MAXIMUM_MEMBERS_IN_AN_UPDATE); j++) {

@@ -11,7 +11,7 @@ set(SOURCES
     ${PROJECT_SOURCE_DIR}/src/ping.c
     ${PROJECT_SOURCE_DIR}/src/ping_req.c
     ${PROJECT_SOURCE_DIR}/src/update.c
-    ${PROJECT_SOURCE_DIR}/src/utils.c)
+    ${CMAKE_CURRENT_LIST_DIR}/utils.c)
 
 add_executable(messages_json main_json.cc ${SOURCES})
 add_executable(messages_cbor main_cbor.cc ${SOURCES})
@@ -24,5 +24,5 @@ target_include_directories(messages_json PUBLIC ${PROJECT_BINARY_DIR}
 target_include_directories(messages_cbor PUBLIC ${PROJECT_BINARY_DIR}
                                                 ${PROJECT_SOURCE_DIR}/include)
 
-target_link_libraries(messages_json PUBLIC cbor benchmark::benchmark)
-target_link_libraries(messages_cbor PUBLIC cbor benchmark::benchmark)
+target_link_libraries(messages_json PUBLIC cbor uuid benchmark::benchmark)
+target_link_libraries(messages_cbor PUBLIC cbor uuid benchmark::benchmark)

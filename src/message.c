@@ -1,8 +1,8 @@
 #include "message.h"
-#include "cbor.h"
 #include "constants.h"
 #ifdef MICROSWIM_JSON
 #include "jsmn.h"
+#include <stdlib.h>
 #endif
 #include "log.h"
 #include "member.h"
@@ -17,12 +17,12 @@
 #include "update.h"
 #include "utils.h"
 #ifdef MICROSWIM_CBOR
+#include "cbor.h"
 #include <cbor/arrays.h>
 #include <cbor/maps.h>
 #include <cbor/serialization.h>
 #include <cbor/strings.h>
 #endif
-#include <errno.h>
 #include <string.h>
 
 /*
@@ -64,8 +64,10 @@ void microswim_message_send(microswim_t* ms, microswim_member_t* member, const c
     ssize_t result =
         sendto(ms->socket, buffer, length, 0, (struct sockaddr*)(&member->addr), sizeof(member->addr));
     if (result < 0) {
-        LOG_ERROR("sendto failed: %s\n", strerror(errno));
+        LOG_ERROR("(microswim_message_send) sendto failed.");
     }
+
+    // TODO: return result.
 }
 
 void microswim_message_print(microswim_message_t* message) {
@@ -122,7 +124,7 @@ void microswim_ack_message_send(microswim_t* ms, struct sockaddr_in addr) {
 
     ssize_t result = sendto(ms->socket, buffer, len, 0, (struct sockaddr*)(&addr), sizeof(addr));
     if (result < 0) {
-        LOG_ERROR("sendto failed: %s\n", strerror(errno));
+        LOG_ERROR("(microswim_ack_message_send) sendto failed.");
     }
 }
 
@@ -187,25 +189,38 @@ void microswim_ack_message_handle(microswim_t* ms, microswim_message_t* message)
 /*
  * @brief Handles the incoming message.
  */
-void microswim_message_handle(microswim_t* ms, unsigned char* buffer, ssize_t len) {
-    microswim_message_t message = { 0 };
-    microswim_decode_message(&message, buffer, len);
-    microswim_message_print(&message);
-    microswim_message_extract_members(ms, &message);
+void microswim_message_handle(
+    microswim_t* ms, unsigned char* buffer, ssize_t len,
+    void (*event_handler)(microswim_t*, unsigned char*, ssize_t)) {
 
-    switch (message.type) {
+    microswim_message_t message = { 0 };
+    microswim_message_type_t type = microswim_message_type_get(buffer, len);
+
+    switch (type) {
         case PING_MESSAGE:
+            microswim_decode_message(&message, buffer, len);
+            microswim_message_print(&message);
+            microswim_message_extract_members(ms, &message);
             microswim_ping_message_handle(ms, &message);
             break;
         case PING_REQ_MESSAGE:
+            microswim_decode_message(&message, buffer, len);
+            microswim_message_print(&message);
+            microswim_message_extract_members(ms, &message);
             microswim_ping_req_message_handle(ms, &message);
             break;
         case ACK_MESSAGE:
+            microswim_decode_message(&message, buffer, len);
+            microswim_message_print(&message);
+            microswim_message_extract_members(ms, &message);
             microswim_ack_message_handle(ms, &message);
             break;
         case ALIVE_MESSAGE:
         case SUSPECT_MESSAGE:
         case CONFIRM_MESSAGE:
+            break;
+        case EVENT_MESSAGE:
+            event_handler(ms, buffer, len);
             break;
         default:
             break;
@@ -448,7 +463,6 @@ static void microswim_json_uri_to_sockaddr(struct sockaddr_in* addr, char* buffe
         if (port) {
             if (inet_pton(AF_INET, buffer, &(addr->sin_addr)) != 1) {
                 LOG_ERROR("Invalid IP address: %s\n", buffer);
-                exit(1);
             }
             addr->sin_port = htons(port);
             addr->sin_family = AF_INET;
@@ -472,19 +486,22 @@ microswim_message_type_t microswim_json_message_type_get(char* buffer, ssize_t l
     jsmn_init(&p);
     r = jsmn_parse(&p, buffer, strlen(buffer), t, sizeof(t) / sizeof(t[0]));
     if (r < 0) {
-        printf("Failed to parse JSON: %d\n", r);
+        LOG_ERROR("Failed to parse JSON: %d", r);
         return MALFORMED_MESSAGE;
     }
 
     if (r < 1 || t[0].type != JSMN_OBJECT) {
-        printf("Object expected\n");
-        return -1;
+        LOG_ERROR("Object expected\n");
+        return UNKOWN_MESSAGE;
     }
 
     microswim_message_type_t message_type = MALFORMED_MESSAGE;
 
-    if (jsoneq(buffer, &t[0], "message") == 0) {
-        message_type = strtol(buffer + t[1].start, NULL, 10);
+    for (int i = 0; i < r; i++) {
+        if (jsoneq(buffer, &t[i], "message") == 0) {
+            message_type = (microswim_message_type_t)strtol(buffer + t[i + 1].start, NULL, 10);
+            break;
+        }
     }
 
     return message_type;
@@ -508,13 +525,13 @@ void microswim_json_decode_message(microswim_message_t* message, const char* buf
         return;
     }
 
-    for (int i = 0; i < r; i++) {
+    for (int i = 1; i < r; i++) {
         if (jsoneq(buffer, &t[i], "message") == 0) {
             message->type = strtol(buffer + t[i + 1].start, NULL, 10);
             i++;
         }
         if (jsoneq(buffer, &t[i], "uuid") == 0) {
-            strncpy(message->uuid, buffer + t[i + 1].start, t[i + 1].end - t[i + 1].start);
+            strncpy((char*)message->uuid, buffer + t[i + 1].start, t[i + 1].end - t[i + 1].start);
             i++;
         }
         if (jsoneq(buffer, &t[i], "uri") == 0) {
@@ -558,7 +575,7 @@ void microswim_json_decode_message(microswim_message_t* message, const char* buf
                     jsmntok_t* inner = &t[i + j + k + 3];
                     if (jsoneq(buffer, inner, "uuid") == 0) {
                         strncpy(
-                            message->mu[j].uuid, buffer + (inner + 1)->start,
+                            (char*)message->mu[j].uuid, buffer + (inner + 1)->start,
                             (inner + 1)->end - (inner + 1)->start);
                         i++;
                     } else if (jsoneq(buffer, inner, "uri") == 0) {
@@ -593,7 +610,7 @@ size_t microswim_json_encode_message(microswim_message_t* message, unsigned char
     int remainder = snprintf(
         (char*)buffer, BUFFER_SIZE,
         "{\"message\": %d, \"uuid\": \"%s\", \"uri\": \"%s\", \"status\": %d, \"incarnation\": "
-        "%d, "
+        "%zu, "
         "\"updates\": [",
         message->type, message->uuid, uri_buffer, message->status, message->incarnation);
 
@@ -602,7 +619,7 @@ size_t microswim_json_encode_message(microswim_message_t* message, unsigned char
         microswim_sockaddr_to_uri(&message->mu[i].addr, uri_buffer, sizeof(uri_buffer));
         remainder += snprintf(
             (char*)buffer + remainder, BUFFER_SIZE - remainder,
-            "{\"uuid\": \"%s\", \"uri\": \"%s\", \"status\": %d, \"incarnation\": %d}",
+            "{\"uuid\": \"%s\", \"uri\": \"%s\", \"status\": %d, \"incarnation\": %zu}",
             message->mu[i].uuid, uri_buffer, message->mu[i].status, message->mu[i].incarnation);
 
         if (i < message->update_count - 1) {
@@ -639,6 +656,6 @@ microswim_message_type_t microswim_message_type_get(unsigned char* buffer, ssize
     return microswim_cbor_message_type_get(buffer, len);
 #endif
 #ifdef MICROSWIM_JSON
-    return microswim_json_message_type_get(buffer, len);
+    return microswim_json_message_type_get((char*)buffer, len);
 #endif
 }

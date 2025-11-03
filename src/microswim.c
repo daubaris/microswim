@@ -1,11 +1,10 @@
 #include "microswim.h"
 #include "log.h"
-#include "member.h"
-#include "update.h"
-#include "utils.h"
 #include <errno.h>
 #include <fcntl.h>
+#ifndef EMBEDDED
 #include <stdlib.h>
+#endif
 #include <sys/socket.h>
 #include <unistd.h>
 
@@ -48,14 +47,12 @@ void microswim_socket_setup(microswim_t* ms, char* addr, int port) {
     if (fcntl(ms->socket, F_SETFL, flags | O_NONBLOCK) < 0) {
         perror("Failed to set non-blocking");
         close(ms->socket);
-        exit(EXIT_FAILURE);
     }
 
     if (bind(ms->socket, (struct sockaddr*)&ms->self.addr, sizeof(ms->self.addr)) != 0) {
         int err = errno;
         LOG_ERROR("`bind` exited with an error code: %d\n", err);
         close(ms->socket);
-        exit(EXIT_FAILURE);
     }
 }
 
