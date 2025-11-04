@@ -6,7 +6,6 @@ extern "C" {
 #endif
 
 #include <arpa/inet.h>
-#include <pthread.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <string.h>

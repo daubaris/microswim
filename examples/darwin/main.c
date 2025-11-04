@@ -7,6 +7,7 @@
 #include "ping_req.h"
 #include "update.h"
 #include "utils.h"
+#include <pthread.h>
 #include <stdlib.h>
 #include <unistd.h>
 
