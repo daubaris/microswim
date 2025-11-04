@@ -1,14 +1,13 @@
 #include "member.h"
 #include "constants.h"
+#include "encode.h"
 #include "log.h"
 #include "message.h"
 #include "microswim.h"
 #include "ping.h"
 #include "update.h"
 #include "utils.h"
-#ifndef EMBEDDED
 #include <stdlib.h>
-#endif
 
 /**
  * @brief Returns a pointer to the next member in a round-robin sequence.

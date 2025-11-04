@@ -1,9 +1,7 @@
 #include "update.h"
 #include "log.h"
 #include "microswim.h"
-#ifndef EMBEDDED
 #include <stdlib.h>
-#endif
 
 /**
  * @brief Adds an update to the central update array, referencing the supplied member.

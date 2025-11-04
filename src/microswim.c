@@ -2,9 +2,7 @@
 #include "log.h"
 #include <errno.h>
 #include <fcntl.h>
-#ifndef EMBEDDED
 #include <stdlib.h>
-#endif
 #include <sys/socket.h>
 #include <unistd.h>
 

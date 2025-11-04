@@ -11,14 +11,6 @@ void microswim_message_construct(
     microswim_t* ms, microswim_message_t* message, microswim_message_type_t type,
     microswim_update_t* updates[MAXIMUM_MEMBERS_IN_AN_UPDATE], size_t update_count);
 
-size_t microswim_encode_message(microswim_message_t* message, unsigned char* buffer, size_t size);
-size_t microswim_json_encode_message(microswim_message_t* message, unsigned char* buffer, size_t size);
-size_t microswim_cbor_encode_message(microswim_message_t* message, unsigned char* buffer, size_t size);
-
-void microswim_decode_message(microswim_message_t* message, unsigned char* buffer, ssize_t len);
-void microswim_json_decode_message(microswim_message_t* message, const char* buffer, ssize_t len);
-void microswim_cbor_decode_message(microswim_message_t* message, unsigned char* buffer, ssize_t len);
-
 void microswim_status_message_construct(
     microswim_t* ms, microswim_message_t* message, microswim_message_type_t type, microswim_member_t* member);
 void microswim_message_handle(
@@ -26,7 +18,6 @@ void microswim_message_handle(
     void (*event_handler)(microswim_t*, unsigned char*, ssize_t));
 void microswim_message_send(microswim_t* ms, microswim_member_t* member, const char* buffer, size_t length);
 void microswim_ping_message_send(microswim_t* ms, microswim_member_t* member);
-microswim_message_type_t microswim_message_type_get(unsigned char* buffer, ssize_t len);
 
 #ifdef __cplusplus
 }

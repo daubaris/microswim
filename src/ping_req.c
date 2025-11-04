@@ -1,4 +1,5 @@
 #include "ping_req.h"
+#include "encode.h"
 #include "log.h"
 #include "member.h"
 #include "message.h"
