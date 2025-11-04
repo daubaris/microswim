@@ -26,8 +26,6 @@ void microswim_initialize(microswim_t* ms) {
                          .ping_req_count = 0,
                          .event_count = 0,
                          .round_robin_index = 0 };
-
-    pthread_mutex_init(&ms->mutex, NULL);
 }
 
 /**

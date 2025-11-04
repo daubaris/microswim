@@ -108,7 +108,6 @@ typedef struct {
     size_t ping_req_count;
     size_t event_count;
     size_t round_robin_index;
-    pthread_mutex_t mutex;
 } microswim_t;
 
 void microswim_initialize(microswim_t* ms);

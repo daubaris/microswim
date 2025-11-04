@@ -10,11 +10,13 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+pthread_mutex_t mutex;
+
 void* listener(void* params) {
     microswim_t* ms = (microswim_t*)params;
 
     for (;;) {
-        pthread_mutex_lock(&ms->mutex);
+        pthread_mutex_lock(&mutex);
         microswim_ping_reqs_check(ms);
         microswim_pings_check(ms);
         microswim_members_check_suspects(ms);
@@ -30,7 +32,7 @@ void* listener(void* params) {
             microswim_message_handle(ms, buffer, bytes, NULL);
         }
 
-        pthread_mutex_unlock(&ms->mutex);
+        pthread_mutex_unlock(&mutex);
         usleep(100 * 10);
     }
 }
@@ -39,7 +41,7 @@ void* failure_detection(void* params) {
     microswim_t* ms = (microswim_t*)params;
 
     for (;;) {
-        pthread_mutex_lock(&ms->mutex);
+        pthread_mutex_lock(&mutex);
 
         for (int i = 0; i < GOSSIP_FANOUT; i++) {
             microswim_member_t* member = microswim_member_retrieve(ms);
@@ -70,13 +72,14 @@ void* failure_detection(void* params) {
             }
         }
 
-        pthread_mutex_unlock(&ms->mutex);
+        pthread_mutex_unlock(&mutex);
         usleep(PROTOCOL_PERIOD * 1000000);
     }
 }
 
 int main(int argc, char** argv) {
     srand(time(NULL));
+    pthread_mutex_init(&mutex, NULL);
 
     microswim_t ms;
     microswim_initialize(&ms);
@@ -118,7 +121,7 @@ int main(int argc, char** argv) {
     pthread_join(pl_thread, NULL);
 
     close(ms.socket);
-    pthread_mutex_destroy(&ms.mutex);
+    pthread_mutex_destroy(&mutex);
 
     return 0;
 }
