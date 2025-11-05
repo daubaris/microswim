@@ -1,8 +1,8 @@
 #ifdef MICROSWIM_CBOR
 
 #include "cbor.h"
-#include "log.h"
 #include "microswim.h"
+#include "microswim_log.h"
 
 microswim_message_type_t microswim_decode_message_type(unsigned char* buffer, ssize_t len) {
     struct cbor_load_result result;

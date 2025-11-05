@@ -1,8 +1,8 @@
 #ifdef MICROSWIM_JSON
 
 #include "jsmn.h"
-#include "log.h"
 #include "microswim.h"
+#include "microswim_log.h"
 #include <stdio.h>
 #include <stdlib.h>
 

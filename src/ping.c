@@ -1,10 +1,10 @@
 #include "ping.h"
 #include "constants.h"
 #include "encode.h"
-#include "log.h"
 #include "member.h"
 #include "message.h"
 #include "microswim.h"
+#include "microswim_log.h"
 #include "utils.h"
 
 /**
@@ -40,7 +40,7 @@ microswim_ping_t* microswim_ping_add(microswim_t* ms, microswim_member_t* member
 }
 
 microswim_ping_t* microswim_ping_find(microswim_t* ms, microswim_member_t* member) {
-    for (int i = 0; i < ms->ping_count; i++) {
+    for (size_t i = 0; i < ms->ping_count; i++) {
         if (strncmp((char*)ms->pings[i].member->uuid, (char*)member->uuid, UUID_SIZE) == 0) {
             return &ms->pings[i];
         }
@@ -50,14 +50,14 @@ microswim_ping_t* microswim_ping_find(microswim_t* ms, microswim_member_t* membe
 }
 
 void microswim_ping_remove(microswim_t* ms, microswim_ping_t* ping) {
-    int index;
+    size_t index;
     for (index = 0; index < ms->ping_count; index++) {
         if (&(ms->pings[index]) == ping) {
             break;
         }
     }
 
-    for (int i = index; i < ms->ping_count - 1; i++) {
+    for (size_t i = index; i < ms->ping_count - 1; i++) {
         ms->pings[i] = ms->pings[i + 1];
     }
 
@@ -75,7 +75,7 @@ void microswim_pings_check(microswim_t* ms) {
         } else if (ms->pings[i].ping_req_deadline < microswim_milliseconds() && !ms->pings[i].ping_req) {
             size_t members[FAILURE_DETECTION_GROUP];
             size_t count = microswim_get_ping_req_candidates(ms, members);
-            for (int j = 0; j < count; j++) {
+            for (size_t j = 0; j < count; j++) {
                 unsigned char buffer[BUFFER_SIZE] = { 0 };
                 microswim_message_t message = { 0 };
                 microswim_member_t* member = &ms->members[members[j]];

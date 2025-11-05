@@ -5,6 +5,7 @@
 #include <stdio.h>
 
 size_t microswim_encode_message(microswim_message_t* message, unsigned char* buffer, size_t size) {
+    (void)size;
     char uri_buffer[INET6_ADDRSTRLEN];
     microswim_sockaddr_to_uri(&message->addr, uri_buffer, sizeof(uri_buffer));
 
@@ -15,7 +16,7 @@ size_t microswim_encode_message(microswim_message_t* message, unsigned char* buf
         "\"updates\": [",
         message->type, message->uuid, uri_buffer, message->status, message->incarnation);
 
-    for (int i = 0; i < message->update_count; i++) {
+    for (size_t i = 0; i < message->update_count; i++) {
         char uri_buffer[INET6_ADDRSTRLEN];
         microswim_sockaddr_to_uri(&message->mu[i].addr, uri_buffer, sizeof(uri_buffer));
         remainder += snprintf(

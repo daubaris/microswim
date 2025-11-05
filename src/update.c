@@ -1,6 +1,6 @@
 #include "update.h"
-#include "log.h"
 #include "microswim.h"
+#include "microswim_log.h"
 #include <stdlib.h>
 
 /**
@@ -22,7 +22,7 @@ microswim_update_t* microswim_update_add(microswim_t* ms, microswim_member_t* me
  * @brief Finds update referencing the supplied member from the central update array.
  */
 microswim_update_t* microswim_update_find(microswim_t* ms, microswim_member_t* member) {
-    for (int i = 0; i < ms->update_count; i++) {
+    for (size_t i = 0; i < ms->update_count; i++) {
         if (strncmp((char*)ms->updates[i].member->uuid, (char*)member->uuid, UUID_SIZE) == 0) {
             return &ms->updates[i];
         }

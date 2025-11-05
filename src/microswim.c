@@ -1,7 +1,9 @@
 #include "microswim.h"
-#include "log.h"
+#include "microswim_log.h"
+#include <arpa/inet.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <netinet/in.h>
 #include <stdlib.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -37,7 +39,11 @@ void microswim_socket_setup(microswim_t* ms, char* addr, int port) {
     ms->socket = socket(AF_INET, SOCK_DGRAM, 0);
     ms->self.addr.sin_family = AF_INET;
     ms->self.addr.sin_port = htons(port);
-    ms->self.addr.sin_addr.s_addr = inet_addr(addr);
+
+    if (inet_pton(AF_INET, addr, &ms->self.addr.sin_addr.s_addr) != 1) {
+        fprintf(stderr, "Invalid IPv4 address: %s\n", addr);
+    }
+    // ms->self.addr.sin_addr.s_addr = inet_addr(addr);
 
     int flags = fcntl(ms->socket, F_GETFL, 0);
     if (fcntl(ms->socket, F_SETFL, flags | O_NONBLOCK) < 0) {
@@ -58,14 +64,14 @@ void microswim_index_remove(microswim_t* ms) {
 
     // Find the index of the highest value
     int index = 0;
-    for (int i = 1; i < ms->member_count + 1; i++) {
+    for (size_t i = 1; i < ms->member_count + 1; i++) {
         if (ms->indices[i] > ms->indices[index]) {
             index = i;
         }
     }
 
     // Shift elements to remove the highest value
-    for (int i = index; i < ms->member_count; i++) {
+    for (size_t i = index; i < ms->member_count; i++) {
         ms->indices[i] = ms->indices[i + 1];
     }
 }
@@ -81,7 +87,7 @@ void microswim_index_add(microswim_t* ms) {
 }
 
 size_t* microswim_indices_shift(microswim_t* ms, size_t index) {
-    for (int i = ms->member_count - 1; i > index; i--) {
+    for (size_t i = ms->member_count - 1; i > index; i--) {
         ms->indices[i] = ms->indices[i - 1];
     }
 

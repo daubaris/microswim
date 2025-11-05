@@ -1,8 +1,8 @@
 #ifdef MICROSWIM_CBOR
 
 #include "cbor.h"
-#include "log.h"
 #include "microswim.h"
+#include "microswim_log.h"
 #include "utils.h"
 
 size_t microswim_encode_message(microswim_message_t* message, unsigned char* buffer, size_t size) {

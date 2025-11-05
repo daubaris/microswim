@@ -1,9 +1,9 @@
 #include "member.h"
 #include "constants.h"
 #include "encode.h"
-#include "log.h"
 #include "message.h"
 #include "microswim.h"
+#include "microswim_log.h"
 #include "ping.h"
 #include "update.h"
 #include "utils.h"
@@ -26,7 +26,7 @@ microswim_member_t* microswim_member_retrieve(microswim_t* ms) {
         return NULL;
     }
 
-    int original_index = ms->round_robin_index;
+    size_t original_index = ms->round_robin_index;
 
     while (1) {
         // NOTE: we do not care whether the member is ALIVE or SUSPECT.
@@ -229,7 +229,7 @@ void microswim_member_update(microswim_t* ms, microswim_member_t* ex, microswim_
 microswim_member_t* microswim_member_move(microswim_t* ms, microswim_member_t* member) {
     int index = -1;
 
-    for (int i = 0; i < ms->member_count; i++) {
+    for (size_t i = 0; i < ms->member_count; i++) {
         if (&ms->members[i] == member) {
             index = i;
             break;

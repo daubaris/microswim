@@ -1,6 +1,6 @@
 #include "ping_req.h"
 #include "encode.h"
-#include "log.h"
+#include "microswim_log.h"
 #include "member.h"
 #include "message.h"
 #include "update.h"
@@ -34,7 +34,7 @@ void microswim_ping_req_message_handle(microswim_t* ms, microswim_message_t* mes
 
 microswim_ping_req_t*
     microswim_ping_req_find(microswim_t* ms, microswim_member_t* source, microswim_member_t* target) {
-    for (int i = 0; i < ms->ping_req_count; i++) {
+    for (size_t i = 0; i < ms->ping_req_count; i++) {
         if (strncmp((char*)ms->ping_reqs[i].source->uuid, (char*)source->uuid, UUID_SIZE) == 0 &&
             strncmp((char*)ms->ping_reqs[i].target->uuid, (char*)target->uuid, UUID_SIZE) == 0) {
             return &ms->ping_reqs[i];
@@ -45,14 +45,14 @@ microswim_ping_req_t*
 }
 
 void microswim_ping_req_remove(microswim_t* ms, microswim_ping_req_t* ping) {
-    int index;
+    size_t index;
     for (index = 0; index < ms->ping_req_count; index++) {
         if (&(ms->ping_reqs[index]) == ping) {
             break;
         }
     }
 
-    for (int i = index; i < ms->ping_req_count - 1; i++) {
+    for (size_t i = index; i < ms->ping_req_count - 1; i++) {
         ms->ping_reqs[i] = ms->ping_reqs[i + 1];
     }
 
@@ -61,7 +61,7 @@ void microswim_ping_req_remove(microswim_t* ms, microswim_ping_req_t* ping) {
 
 // Safe guard to not have any left.
 void microswim_ping_reqs_check(microswim_t* ms) {
-    for (int i = 0; i < ms->ping_req_count; i++) {
+    for (size_t i = 0; i < ms->ping_req_count; i++) {
         if (ms->ping_reqs[i].timeout < microswim_milliseconds()) {
             microswim_ping_req_remove(ms, &ms->ping_reqs[i]);
         }

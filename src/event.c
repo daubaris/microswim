@@ -1,9 +1,11 @@
 #include "event.h"
 #include "constants.h"
-#include "log.h"
+#include "microswim_log.h"
 #include "microswim.h"
 
 void microswim_event_register(microswim_t* ms, microswim_event_t event) {
+    (void)ms;
+
     if (ms->event_count < MAXIMUM_EVENTS) {
         ms->events[event.type].type = event.type;
         ms->events[event.type].size = event.size;
@@ -20,4 +22,7 @@ void microswim_event_register(microswim_t* ms, microswim_event_t event) {
 }
 
 void microswim_event_dispatch(microswim_t* ms, char* event_name, void* data) {
+    (void)ms;
+    (void)event_name;
+    (void)data;
 }

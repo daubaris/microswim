@@ -2,9 +2,9 @@
 #include "constants.h"
 #include "decode.h"
 #include "encode.h"
-#include "log.h"
 #include "member.h"
 #include "microswim.h"
+#include "microswim_log.h"
 #ifdef CUSTOM_CONFIGURATION
 #include "configuration.h"
 #else
@@ -75,7 +75,7 @@ void microswim_message_print(microswim_message_t* message) {
         message->uuid, message->status, message->incarnation, ntohs(message->addr.sin_port));
 
     LOG_DEBUG("UPDATES:");
-    for (int i = 0; i < message->update_count; i++) {
+    for (size_t i = 0; i < message->update_count; i++) {
         LOG_DEBUG(
             "\t%s: STATUS: %d, INCARNATION: %zu", message->mu[i].uuid, message->mu[i].status,
             message->mu[i].incarnation);
@@ -94,7 +94,7 @@ void microswim_message_extract_members(microswim_t* ms, microswim_message_t* mes
 
     microswim_members_check(ms, &self);
 
-    for (int i = 0; i < message->update_count; i++) {
+    for (size_t i = 0; i < message->update_count; i++) {
         microswim_member_t* message_member = &message->mu[i];
         microswim_members_check(ms, message_member);
     }
@@ -153,7 +153,7 @@ void microswim_ack_message_handle(microswim_t* ms, microswim_message_t* message)
         microswim_member_mark_alive(ms, ping->member);
 
         microswim_ping_req_t* ping_req = NULL;
-        for (int i = 0; i < ms->ping_req_count; i++) {
+        for (size_t i = 0; i < ms->ping_req_count; i++) {
             if (strncmp((char*)message->uuid, (char*)ms->ping_reqs[i].target->uuid, UUID_SIZE) == 0) {
                 ping_req = &ms->ping_reqs[i];
                 microswim_update_t* updates[MAXIMUM_MEMBERS_IN_AN_UPDATE] = { 0 };

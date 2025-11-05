@@ -40,5 +40,5 @@ if(CUSTOM_CONFIGURATION)
 endif()
 
 if(CBOR)
-  target_link_libraries(darwin PUBLIC cbor)
+  target_link_libraries(darwin PUBLIC cbor uuid)
 endif()
