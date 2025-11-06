@@ -5,6 +5,7 @@
 #include <fcntl.h>
 #include <netinet/in.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
@@ -36,14 +37,22 @@ void microswim_initialize(microswim_t* ms) {
  * Assigns the supplied IP address and port to the socket and sets it to be non-blocking.
  */
 void microswim_socket_setup(microswim_t* ms, char* addr, int port) {
-    ms->socket = socket(AF_INET, SOCK_DGRAM, 0);
+    ms->socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    if (ms->socket < 0) {
+        LOG_ERROR("socket() failed: %d (%s)\n", errno, strerror(errno));
+        close(ms->socket);
+    }
+
     ms->self.addr.sin_family = AF_INET;
     ms->self.addr.sin_port = htons(port);
 
-    if (inet_pton(AF_INET, addr, &ms->self.addr.sin_addr.s_addr) != 1) {
-        fprintf(stderr, "Invalid IPv4 address: %s\n", addr);
+    if (addr == NULL || *addr == '\0') {
+        ms->self.addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    } else {
+        if (inet_pton(AF_INET, addr, &ms->self.addr.sin_addr.s_addr) != 1) {
+            fprintf(stderr, "Invalid IPv4 address: %s, error: %s\n", addr, strerror(errno));
+        }
     }
-    // ms->self.addr.sin_addr.s_addr = inet_addr(addr);
 
     int flags = fcntl(ms->socket, F_GETFL, 0);
     if (fcntl(ms->socket, F_SETFL, flags | O_NONBLOCK) < 0) {
@@ -53,7 +62,7 @@ void microswim_socket_setup(microswim_t* ms, char* addr, int port) {
 
     if (bind(ms->socket, (struct sockaddr*)&ms->self.addr, sizeof(ms->self.addr)) != 0) {
         int err = errno;
-        LOG_ERROR("`bind` exited with an error code: %d\n", err);
+        LOG_ERROR("`bind` exited with an error code: %d (%s)\n", err, strerror(errno));
         close(ms->socket);
     }
 }
