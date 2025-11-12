@@ -115,9 +115,3 @@ void microswim_indices_shuffle(microswim_t* ms) {
     }
 }
 
-int microswim_compare_by_count(const void* a, const void* b) {
-    microswim_update_t* u_a = (microswim_update_t*)a;
-    microswim_update_t* u_b = (microswim_update_t*)b;
-
-    return u_a->count - u_b->count;
-}

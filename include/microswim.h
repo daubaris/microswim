@@ -119,8 +119,6 @@ void microswim_index_remove(microswim_t* ms);
 void microswim_indices_shuffle(microswim_t* ms);
 size_t* microswim_indices_shift(microswim_t* ms, size_t index);
 
-int microswim_compare_by_count(const void* a, const void* b);
-
 #ifdef __cplusplus
 }
 #endif
