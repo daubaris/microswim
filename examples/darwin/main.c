@@ -1,12 +1,13 @@
 #include "encode.h"
-#include "log.h"
 #include "member.h"
 #include "message.h"
 #include "microswim.h"
+#include "microswim_log.h"
 #include "ping.h"
 #include "ping_req.h"
 #include "update.h"
 #include "utils.h"
+#include <fcntl.h>
 #include <pthread.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -85,6 +86,12 @@ int main(int argc, char** argv) {
     microswim_t ms;
     microswim_initialize(&ms);
     microswim_socket_setup(&ms, argv[1], atoi(argv[2]));
+
+    int flags = fcntl(ms.socket, F_GETFL, 0);
+    if (fcntl(ms.socket, F_SETFL, flags | O_NONBLOCK) < 0) {
+        perror("Failed to set non-blocking");
+        close(ms.socket);
+    }
 
     char uuid[UUID_SIZE];
     microswim_uuid_generate(uuid);

@@ -2,7 +2,6 @@
 #include "microswim_log.h"
 #include <arpa/inet.h>
 #include <errno.h>
-#include <fcntl.h>
 #include <netinet/in.h>
 #include <stdlib.h>
 #include <string.h>
@@ -52,12 +51,6 @@ void microswim_socket_setup(microswim_t* ms, char* addr, int port) {
         if (inet_pton(AF_INET, addr, &ms->self.addr.sin_addr.s_addr) != 1) {
             fprintf(stderr, "Invalid IPv4 address: %s, error: %s\n", addr, strerror(errno));
         }
-    }
-
-    int flags = fcntl(ms->socket, F_GETFL, 0);
-    if (fcntl(ms->socket, F_SETFL, flags | O_NONBLOCK) < 0) {
-        perror("Failed to set non-blocking");
-        close(ms->socket);
     }
 
     if (bind(ms->socket, (struct sockaddr*)&ms->self.addr, sizeof(ms->self.addr)) != 0) {
@@ -114,4 +107,3 @@ void microswim_indices_shuffle(microswim_t* ms) {
         ms->indices[j] = temp;
     }
 }
-
