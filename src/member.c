@@ -63,7 +63,7 @@ microswim_member_t* microswim_member_retrieve(microswim_t* ms) {
  */
 microswim_member_t* microswim_member_add(microswim_t* ms, microswim_member_t member) {
     if (ms->member_count > MAXIMUM_MEMBERS) {
-        LOG_ERROR("Cannot add more than %d members\n", MAXIMUM_MEMBERS);
+        MICROSWIM_LOG_ERROR("Cannot add more than %d members\n", MAXIMUM_MEMBERS);
         return NULL;
     }
 
@@ -92,7 +92,7 @@ microswim_member_t* microswim_member_find(microswim_t* ms, microswim_member_t* m
         if (ms->members[i].uuid[0] == '\0') {
             int c = microswim_member_address_compare(&ms->members[i], member);
             if (c == (SIN_FAMILY | SIN_PORT | SIN_ADDR)) {
-                LOG_DEBUG("Updated member's UUID");
+                MICROSWIM_LOG_DEBUG("Updated member's UUID");
                 strncpy((char*)ms->members[i].uuid, (char*)member->uuid, UUID_SIZE);
             }
         }
@@ -264,7 +264,7 @@ void microswim_member_mark_alive(microswim_t* ms, microswim_member_t* member) {
     microswim_member_status_t status = member->status;
     member->status = ALIVE;
     member->timeout = (microswim_milliseconds() + (uint64_t)(SUSPECT_TIMEOUT * 1000));
-    LOG_DEBUG("Member: %s was marked alive", member->uuid);
+    MICROSWIM_LOG_DEBUG("Member: %s was marked alive", member->uuid);
 
     if (status == SUSPECT) {
         microswim_message_t message = { 0 };
@@ -286,7 +286,7 @@ void microswim_member_mark_suspect(microswim_t* ms, microswim_member_t* member) 
     if (member->status == ALIVE) {
         member->status = SUSPECT;
         member->timeout = (microswim_milliseconds() + (uint64_t)(SUSPECT_TIMEOUT * 1000));
-        LOG_DEBUG("Member: %s was marked suspect", member->uuid);
+        MICROSWIM_LOG_DEBUG("Member: %s was marked suspect", member->uuid);
 
         microswim_message_t message = { 0 };
         microswim_status_message_construct(ms, &message, SUSPECT_MESSAGE, member);
@@ -305,7 +305,7 @@ void microswim_member_mark_suspect(microswim_t* ms, microswim_member_t* member) 
  */
 void microswim_member_mark_confirmed(microswim_t* ms, microswim_member_t* member) {
     member->status = CONFIRMED;
-    LOG_DEBUG("Member: %s was marked confirmed", member->uuid);
+    MICROSWIM_LOG_DEBUG("Member: %s was marked confirmed", member->uuid);
 
     microswim_ping_t* ping = microswim_ping_find(ms, member);
     if (ping != NULL) {
@@ -350,7 +350,7 @@ size_t microswim_member_address_compare(microswim_member_t* a, microswim_member_
  */
 microswim_member_t* microswim_member_confirmed_add(microswim_t* ms, microswim_member_t member) {
     if (ms->confirmed_count > MAXIMUM_MEMBERS) {
-        LOG_ERROR("Cannot add more than %d members\n", MAXIMUM_MEMBERS);
+        MICROSWIM_LOG_ERROR("Cannot add more than %d members\n", MAXIMUM_MEMBERS);
         return NULL;
     }
 
@@ -405,7 +405,7 @@ void microswim_members_check(microswim_t* ms, microswim_member_t* member) {
     if (existing_member == NULL && confirmed_member == NULL) {
         // Member is not found in either list, add it to the appropriate list
         if (member->status == CONFIRMED) {
-            LOG_DEBUG("Added member: %s to confirmed list.", member->uuid);
+            MICROSWIM_LOG_DEBUG("Added member: %s to confirmed list.", member->uuid);
             microswim_member_t* new_member = microswim_member_confirmed_add(ms, *member);
             if (new_member != NULL) {
                 microswim_update_add(ms, new_member);

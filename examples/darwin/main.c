@@ -60,11 +60,11 @@ void* failure_detection(void* params) {
             }
         }
 
-        LOG_DEBUG("ms->ping_count: %zu", ms->ping_count);
-        LOG_DEBUG("ms->ping_req_count: %zu", ms->ping_req_count);
-        LOG_DEBUG("ms->update_count: %zu", ms->update_count);
-        LOG_DEBUG("ms->member_count: %zu", ms->member_count);
-        LOG_DEBUG("ms->confirmed_count: %zu", ms->confirmed_count);
+        MICROSWIM_LOG_DEBUG("ms->ping_count: %zu", ms->ping_count);
+        MICROSWIM_LOG_DEBUG("ms->ping_req_count: %zu", ms->ping_req_count);
+        MICROSWIM_LOG_DEBUG("ms->update_count: %zu", ms->update_count);
+        MICROSWIM_LOG_DEBUG("ms->member_count: %zu", ms->member_count);
+        MICROSWIM_LOG_DEBUG("ms->confirmed_count: %zu", ms->confirmed_count);
         printf("[DEBUG] ms->indices: [");
         for (int i = 0; i < ms->member_count; i++) {
             if (i < ms->member_count - 1) {
@@ -84,7 +84,7 @@ int main(int argc, char** argv) {
     pthread_mutex_init(&mutex, NULL);
 
     microswim_t ms;
-    microswim_initialize(&ms);
+    memset(&ms, 0, sizeof(ms));
     microswim_socket_setup(&ms, argv[1], atoi(argv[2]));
 
     int flags = fcntl(ms.socket, F_GETFL, 0);
@@ -111,7 +111,7 @@ int main(int argc, char** argv) {
     member.incarnation = 0;
 
     if (inet_pton(AF_INET, argv[3], &(member.addr.sin_addr)) != 1) {
-        LOG_ERROR("Invalid IP address: %s\n", argv[3]);
+        MICROSWIM_LOG_ERROR("Invalid IP address: %s\n", argv[3]);
         return 1;
     }
 

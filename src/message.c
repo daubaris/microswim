@@ -13,6 +13,7 @@
 #include "ping.h"
 #include "ping_req.h"
 #include "update.h"
+#include <errno.h>
 #include <string.h>
 
 /*
@@ -54,14 +55,14 @@ void microswim_message_send(microswim_t* ms, microswim_member_t* member, const c
     ssize_t result =
         sendto(ms->socket, buffer, length, 0, (struct sockaddr*)(&member->addr), sizeof(member->addr));
     if (result < 0) {
-        LOG_ERROR("(microswim_message_send) sendto failed.");
+        MICROSWIM_LOG_ERROR("(microswim_message_send) sendto failed: (%d) %d %s", result, errno, strerror(errno));
     }
 
     // TODO: return result.
 }
 
 void microswim_message_print(microswim_message_t* message) {
-    LOG_DEBUG(
+    MICROSWIM_LOG_DEBUG(
         "MESSAGE: %s, FROM: %s, STATUS: %d, INCARNATION: %zu, URI: %d",
         (message->type == ALIVE_MESSAGE ?
              "ALIVE MESSAGE" :
@@ -74,9 +75,9 @@ void microswim_message_print(microswim_message_t* message) {
                             (message->type == PING_REQ_MESSAGE ? "PING_REQ_MESSAGE" : "ACK MESSAGE"))))),
         message->uuid, message->status, message->incarnation, ntohs(message->addr.sin_port));
 
-    LOG_DEBUG("UPDATES:");
+    MICROSWIM_LOG_DEBUG("UPDATES:");
     for (size_t i = 0; i < message->update_count; i++) {
-        LOG_DEBUG(
+        MICROSWIM_LOG_DEBUG(
             "\t%s: STATUS: %d, INCARNATION: %zu", message->mu[i].uuid, message->mu[i].status,
             message->mu[i].incarnation);
     }
@@ -114,7 +115,7 @@ void microswim_ack_message_send(microswim_t* ms, struct sockaddr_in addr) {
 
     ssize_t result = sendto(ms->socket, buffer, len, 0, (struct sockaddr*)(&addr), sizeof(addr));
     if (result < 0) {
-        LOG_ERROR("(microswim_ack_message_send) sendto failed.");
+        MICROSWIM_LOG_ERROR("(microswim_ack_message_send) sendto failed.");
     }
 }
 

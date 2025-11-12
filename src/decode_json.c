@@ -22,12 +22,12 @@ microswim_message_type_t microswim_decode_message_type(char* buffer, ssize_t len
     jsmn_init(&p);
     r = jsmn_parse(&p, buffer, strlen(buffer), t, sizeof(t) / sizeof(t[0]));
     if (r < 0) {
-        LOG_ERROR("Failed to parse JSON: %d", r);
+        MICROSWIM_LOG_ERROR("Failed to parse JSON: %d", r);
         return MALFORMED_MESSAGE;
     }
 
     if (r < 1 || t[0].type != JSMN_OBJECT) {
-        LOG_ERROR("Object expected\n");
+        MICROSWIM_LOG_ERROR("Object expected\n");
         return UNKOWN_MESSAGE;
     }
 
@@ -55,7 +55,7 @@ static void microswim_decode_uri_to_sockaddr(struct sockaddr_in* addr, char* buf
         int port = strtol(p, NULL, 10);
         if (port) {
             if (inet_pton(AF_INET, buffer, &(addr->sin_addr)) != 1) {
-                LOG_ERROR("Invalid IP address: %s\n", buffer);
+                MICROSWIM_LOG_ERROR("Invalid IP address: %s\n", buffer);
             }
             addr->sin_port = htons(port);
             addr->sin_family = AF_INET;

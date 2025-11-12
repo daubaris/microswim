@@ -1,8 +1,8 @@
 #include "ping_req.h"
 #include "encode.h"
-#include "microswim_log.h"
 #include "member.h"
 #include "message.h"
+#include "microswim_log.h"
 #include "update.h"
 #include "utils.h"
 
@@ -13,11 +13,11 @@ void microswim_ping_req_message_handle(microswim_t* ms, microswim_message_t* mes
     microswim_member_t* target = microswim_member_find(ms, &message->mu[0]);
 
     if (!source) {
-        LOG_ERROR("Could not find the source member for ping_req");
+        MICROSWIM_LOG_ERROR("Could not find the source member for ping_req");
         return;
     }
     if (!target) {
-        LOG_ERROR("Could not find the target member for ping_req");
+        MICROSWIM_LOG_ERROR("Could not find the target member for ping_req");
         return;
     }
 
@@ -82,7 +82,7 @@ void microswim_ping_req_add(microswim_t* ms, microswim_member_t* source, microsw
                 (microswim_milliseconds() + (uint64_t)(PROTOCOL_PERIOD * 1000));
             ms->ping_req_count++;
         } else {
-            LOG_WARN(
+            MICROSWIM_LOG_WARN(
                 "Unable to add a new ping: the maximum limit (%d) has been "
                 "reached. Consider increasing MAXIMUM_PINGS to allow "
                 "additional members.",

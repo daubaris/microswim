@@ -9,7 +9,7 @@ microswim_message_type_t microswim_decode_message_type(unsigned char* buffer, ss
     cbor_item_t* root = cbor_load(buffer, len, &result);
 
     if (result.error.code != CBOR_ERR_NONE) {
-        LOG_ERROR(
+        MICROSWIM_LOG_ERROR(
             "There was an error while reading the input near byte %zu (read "
             "%zu bytes in total)",
             result.error.position, result.read);
@@ -32,7 +32,7 @@ microswim_message_type_t microswim_decode_message_type(unsigned char* buffer, ss
             break;
         }
         default:
-            LOG_ERROR("Wrong message type: %d, ignoring...", cbor_typeof(root));
+            MICROSWIM_LOG_ERROR("Wrong message type: %d, ignoring...", cbor_typeof(root));
             break;
     }
 
@@ -56,7 +56,7 @@ static void microswim_decode_uri_to_sockaddr(struct sockaddr_in* addr, cbor_item
         int port = strtol(p, NULL, 10);
         if (port) {
             if (inet_pton(AF_INET, buffer, &(addr->sin_addr)) != 1) {
-                LOG_ERROR("Invalid IP address: %s\n", buffer);
+                MICROSWIM_LOG_ERROR("Invalid IP address: %s\n", buffer);
                 exit(1);
             }
             addr->sin_port = htons(port);
@@ -118,7 +118,7 @@ void microswim_decode_message(microswim_message_t* message, const char* buffer, 
     cbor_item_t* root = cbor_load((unsigned char*)buffer, len, &result);
 
     if (result.error.code != CBOR_ERR_NONE) {
-        LOG_ERROR(
+        MICROSWIM_LOG_ERROR(
             "There was an error while reading the input near byte %zu (read "
             "%zu bytes in total): \n",
             result.error.position, result.read);
@@ -137,7 +137,7 @@ void microswim_decode_message(microswim_message_t* message, const char* buffer, 
             }
             break;
         default:
-            LOG_ERROR("Wrong message type: %d, ignoring...", cbor_typeof(root));
+            MICROSWIM_LOG_ERROR("Wrong message type: %d, ignoring...", cbor_typeof(root));
             break;
     }
 

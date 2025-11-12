@@ -1,7 +1,7 @@
 #include "event.h"
 #include "constants.h"
-#include "microswim_log.h"
 #include "microswim.h"
+#include "microswim_log.h"
 
 void microswim_event_register(microswim_t* ms, microswim_event_t event) {
     (void)ms;
@@ -13,7 +13,7 @@ void microswim_event_register(microswim_t* ms, microswim_event_t event) {
         ms->events[event.type].decoder = event.decoder;
         ms->events[event.type].handler = event.handler;
     } else {
-        LOG_WARN(
+        MICROSWIM_LOG_WARN(
             "Unable to add a new event: the maximum limit (%d) has been "
             "reached. Consider increasing MAXIMUM_EVENTS to allow "
             "additional members.",

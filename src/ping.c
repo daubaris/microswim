@@ -18,7 +18,7 @@ microswim_ping_t* microswim_ping_add(microswim_t* ms, microswim_member_t* member
 
     if (member->uuid[0] != '\0') {
         if (ms->ping_count > MAXIMUM_PINGS) {
-            LOG_ERROR(
+            MICROSWIM_LOG_ERROR(
                 "Unable to add a new ping: the maximum limit (%d) has been "
                 "reached. Consider increasing MAXIMUM_PINGS to allow "
                 "additional members.",

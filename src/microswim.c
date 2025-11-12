@@ -1,4 +1,7 @@
 #include "microswim.h"
+#ifdef RIOT_OS
+#include "lwip/netif.h"
+#endif
 #include "microswim_log.h"
 #include <arpa/inet.h>
 #include <errno.h>
@@ -9,53 +12,56 @@
 #include <unistd.h>
 
 /**
- * @brief Initializes the `microswim_t` structure.
- */
-void microswim_initialize(microswim_t* ms) {
-    *ms = (microswim_t){ .socket = 0,
-                         .self = { { 0 } },
-                         .members = { { { 0 } } },
-                         .confirmed = { { { 0 } } },
-                         .updates = { { 0 } },
-                         .pings = { { 0 } },
-                         .ping_reqs = { { 0 } },
-                         .events = { { 0 } },
-                         .indices = { 0 },
-                         .member_count = 0,
-                         .confirmed_count = 0,
-                         .update_count = 0,
-                         .ping_count = 0,
-                         .ping_req_count = 0,
-                         .event_count = 0,
-                         .round_robin_index = 0 };
-}
-
-/**
  * @brief Sets up the socket.
  *
  * Assigns the supplied IP address and port to the socket and sets it to be non-blocking.
  */
 void microswim_socket_setup(microswim_t* ms, char* addr, int port) {
-    ms->socket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    ms->socket = socket(AF_INET, SOCK_DGRAM, 0);
     if (ms->socket < 0) {
-        LOG_ERROR("socket() failed: %d (%s)\n", errno, strerror(errno));
-        close(ms->socket);
+        MICROSWIM_LOG_ERROR("socket() failed: %d (%s)\n", errno, strerror(errno));
+        return;
     }
 
+    memset(&ms->self.addr, 0, sizeof(ms->self.addr));
     ms->self.addr.sin_family = AF_INET;
     ms->self.addr.sin_port = htons(port);
 
     if (addr == NULL || *addr == '\0') {
+#ifdef RIOT_OS
+        struct netif* n = netif_default;
+        if (!n) {
+            printf("No default netif available.\r\n");
+            close(ms->socket);
+            return;
+        }
+
+        const ip4_addr_t* ip = netif_ip4_addr(n);
+        if (ip4_addr_isany_val(*ip)) {
+            printf("Interface has no IPv4 address yet (0.0.0.0). Cannot bind.\r\n");
+            close(ms->socket);
+            return;
+        }
+
+        ms->self.addr.sin_addr.s_addr = ip->addr;
+
+        char ipbuf[INET_ADDRSTRLEN];
+        inet_ntop(AF_INET, &ms->self.addr.sin_addr, ipbuf, sizeof(ipbuf));
+        printf("Using interface IP: %s\r\n", ipbuf);
+#else
         ms->self.addr.sin_addr.s_addr = htonl(INADDR_ANY);
+#endif
     } else {
         if (inet_pton(AF_INET, addr, &ms->self.addr.sin_addr.s_addr) != 1) {
-            fprintf(stderr, "Invalid IPv4 address: %s, error: %s\n", addr, strerror(errno));
+            printf("Invalid IPv4 address: %s (errno %d: %s)\r\n", addr, errno, strerror(errno));
+            close(ms->socket);
+            return;
         }
     }
 
     if (bind(ms->socket, (struct sockaddr*)&ms->self.addr, sizeof(ms->self.addr)) != 0) {
         int err = errno;
-        LOG_ERROR("`bind` exited with an error code: %d (%s)\n", err, strerror(errno));
+        MICROSWIM_LOG_ERROR("`bind` exited with an error code: %d (%s)\n", err, strerror(errno));
         close(ms->socket);
     }
 }

@@ -267,7 +267,7 @@ int main(int argc, char** argv) {
     srand(time(NULL));
 
     microswim_t ms;
-    microswim_initialize(&ms);
+    memset(&ms, 0, sizeof(ms));
     microswim_socket_setup(&ms, argv[1], atoi(argv[2]));
 
     microswim_member_t member;

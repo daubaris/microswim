@@ -9,18 +9,18 @@
 #define INFO 3
 #define DEBUG 4
 
-#define LOG_LEVEL DEBUG
+#define MICROSWIM_LOG_LEVEL DEBUG
 
-#define LOG(level, format, ...)                                   \
+#define MICROSWIM_LOG(level, format, ...)                         \
     do {                                                          \
-        if (level <= LOG_LEVEL) {                                 \
+        if (level <= MICROSWIM_LOG_LEVEL) {                       \
             printf("[%s] " format "\r\n", #level, ##__VA_ARGS__); \
         }                                                         \
     } while (0)
 
-#define LOG_ERROR(format, ...) LOG(ERROR, format, ##__VA_ARGS__)
-#define LOG_WARN(format, ...) LOG(WARN, format, ##__VA_ARGS__)
-#define LOG_INFO(format, ...) LOG(INFO, format, ##__VA_ARGS__)
-#define LOG_DEBUG(format, ...) LOG(DEBUG, format, ##__VA_ARGS__)
+#define MICROSWIM_LOG_ERROR(format, ...) MICROSWIM_LOG(ERROR, format, ##__VA_ARGS__)
+#define MICROSWIM_LOG_WARN(format, ...) MICROSWIM_LOG(WARN, format, ##__VA_ARGS__)
+#define MICROSWIM_LOG_INFO(format, ...) MICROSWIM_LOG(INFO, format, ##__VA_ARGS__)
+#define MICROSWIM_LOG_DEBUG(format, ...) MICROSWIM_LOG(DEBUG, format, ##__VA_ARGS__)
 
 #endif // LOG_H

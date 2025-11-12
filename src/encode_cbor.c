@@ -31,7 +31,7 @@ size_t microswim_encode_message(microswim_message_t* message, unsigned char* buf
         (struct cbor_pair){ .key = cbor_move(cbor_build_string("incarnation")),
                             .value = cbor_move(cbor_build_uint8((uint8_t)message->incarnation)) });
     if (!success) {
-        LOG_ERROR("Preallocated storage for map is full (origin_map)");
+        MICROSWIM_LOG_ERROR("Preallocated storage for map is full (origin_map)");
         return 0;
     }
 
@@ -60,7 +60,7 @@ size_t microswim_encode_message(microswim_message_t* message, unsigned char* buf
         success &= cbor_array_push(update_array, cbor_move(update_map));
 
         if (!success) {
-            LOG_ERROR("Preallocated storage for map is full (update_map)");
+            MICROSWIM_LOG_ERROR("Preallocated storage for map is full (update_map)");
             return 0;
         }
     }
@@ -69,13 +69,13 @@ size_t microswim_encode_message(microswim_message_t* message, unsigned char* buf
         origin_map,
         (struct cbor_pair){ .key = cbor_move(cbor_build_string("updates")), .value = cbor_move(update_array) });
     if (!success) {
-        LOG_ERROR("Preallocated storage for map is full (origin_map, update_array)");
+        MICROSWIM_LOG_ERROR("Preallocated storage for map is full (origin_map, update_array)");
         return 0;
     }
 
     size_t len = cbor_serialize(origin_map, buffer, size);
     if (!len) {
-        LOG_ERROR("Message serialization has failed");
+        MICROSWIM_LOG_ERROR("Message serialization has failed");
         return 0;
     }
 

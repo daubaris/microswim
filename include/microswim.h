@@ -111,7 +111,6 @@ typedef struct {
     size_t round_robin_index;
 } microswim_t;
 
-void microswim_initialize(microswim_t* ms);
 void microswim_socket_setup(microswim_t* ms, char* addr, int port);
 
 void microswim_index_add(microswim_t* ms);
