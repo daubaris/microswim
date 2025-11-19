@@ -43,6 +43,27 @@ microswim_message_type_t microswim_decode_message_type(char* buffer, ssize_t len
     return message_type;
 }
 
+#ifdef RIOT_OS
+static void microswim_decode_uri_to_sockaddr(sock_udp_ep_t* addr, char* buffer, size_t length) {
+    char* colon = strchr(buffer, ':');
+    if (colon) {
+        int port_length = (buffer + length) - (colon);
+        char p[port_length - 1];
+        memset(p, 0, sizeof(p));
+        memcpy(p, colon + 1, sizeof(p));
+        buffer[length - port_length] = '\0';
+        p[port_length] = '\0';
+        int port = strtol(p, NULL, 10);
+        if (port) {
+            if (inet_pton(AF_INET, buffer, &(addr->addr)) != 1) {
+                MICROSWIM_LOG_ERROR("Invalid IP address: %s\n", buffer);
+            }
+            addr->port = port;
+            addr->family = AF_INET;
+        }
+    }
+}
+#else
 static void microswim_decode_uri_to_sockaddr(struct sockaddr_in* addr, char* buffer, size_t length) {
     char* colon = strchr(buffer, ':');
     if (colon) {
@@ -62,6 +83,7 @@ static void microswim_decode_uri_to_sockaddr(struct sockaddr_in* addr, char* buf
         }
     }
 }
+#endif
 
 void microswim_decode_message(microswim_message_t* message, const char* buffer, ssize_t len) {
     int r;

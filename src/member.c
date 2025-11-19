@@ -333,12 +333,24 @@ void microswim_member_mark_confirmed(microswim_t* ms, microswim_member_t* member
 size_t microswim_member_address_compare(microswim_member_t* a, microswim_member_t* b) {
     size_t r = 0;
 
+#ifdef RIOT_OS
+    if (a->addr.family == b->addr.family)
+        r |= SIN_FAMILY;
+    if (ntohs(a->addr.port) == ntohs(b->addr.port))
+        r |= SIN_PORT;
+    if (a->addr.family == AF_INET) {
+        if (memcmp(a->addr.addr.ipv4, b->addr.addr.ipv4, sizeof(a->addr.addr.ipv4)) == 0) {
+            r |= SIN_ADDR;
+        }
+    }
+#else
     if (a->addr.sin_family == b->addr.sin_family)
         r |= SIN_FAMILY;
     if (ntohs(a->addr.sin_port) == ntohs(b->addr.sin_port))
         r |= SIN_PORT;
     if (a->addr.sin_addr.s_addr == b->addr.sin_addr.s_addr)
         r |= SIN_ADDR;
+#endif
 
     return r;
 }

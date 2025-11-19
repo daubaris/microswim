@@ -4,14 +4,17 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
+#ifdef RIOT_OS
+#include "net/sock/udp.h"
+#else
 #include <sys/socket.h>
+#endif
 
 #include "constants.h"
 
@@ -41,7 +44,11 @@ typedef enum {
 
 typedef struct {
     uint8_t uuid[UUID_SIZE];
+#ifdef RIOT_OS
+    sock_udp_ep_t addr;
+#else
     struct sockaddr_in addr;
+#endif
     microswim_member_status_t status;
     size_t incarnation;
     uint64_t timeout; // NOTE: Suspicion timeout
@@ -68,7 +75,11 @@ typedef struct {
 typedef struct {
     microswim_message_type_t type;
     uint8_t uuid[UUID_SIZE];
+#ifdef RIOT_OS
+    sock_udp_ep_t addr;
+#else
     struct sockaddr_in addr;
+#endif
     microswim_member_status_t status;
     size_t incarnation;
     microswim_member_t mu[MAXIMUM_UPDATES];
@@ -93,7 +104,11 @@ typedef struct {
 } microswim_event_message_t;
 
 typedef struct {
+#ifdef RIOT_OS
+    sock_udp_t socket;
+#else
     int socket;
+#endif
     microswim_member_t self;
     microswim_member_t members[MAXIMUM_MEMBERS];
     microswim_member_t confirmed[MAXIMUM_MEMBERS];

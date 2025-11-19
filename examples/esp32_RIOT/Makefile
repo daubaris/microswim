@@ -5,17 +5,24 @@ RIOTBASE ?= $(CURDIR)/RIOT
 CFLAGS += -DLWIP_IPV4
 CFLAGS += -DMICROSWIM_JSON=1
 CFLAGS += -DETHARP_SUPPORT_STATIC_ENTRIES=1
+CFLAGS += -DRIOT_OS
 
 USEMODULE += microswim
 EXTERNAL_MODULE_DIRS += $(CURDIR)/../../../
 
+USEMODULE += event_timeout
+USEMODULE += event_thread
+USEMODULE += event_thread_medium
 USEMODULE += netdev_default
-
+USEMODULE += netutils
 USEMODULE += uuid
 USEMODULE += ipv4_addr
-USEMODULE += sock_udp
 USEMODULE += sock_ip
-USEMODULE += pthread
+USEMODULE += sock_udp
+USEMODULE += sock_async
+USEMODULE += sock_async_event
+USEMODULE += sock_util
+USEMODULE += od
 USEMODULE += lwip
 USEMODULE += lwip_sock
 USEMODULE += lwip_sock_udp

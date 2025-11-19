@@ -34,6 +34,7 @@ add_executable(darwin ${SOURCES})
 
 target_include_directories(darwin PUBLIC ${PROJECT_BINARY_DIR}
                                          ${PROJECT_SOURCE_DIR}/include)
+target_link_libraries(darwin PUBLIC uuid)
 
 if(CUSTOM_CONFIGURATION)
   target_include_directories(darwin PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

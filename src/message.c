@@ -52,6 +52,12 @@ void microswim_message_construct(
 }
 
 void microswim_message_send(microswim_t* ms, microswim_member_t* member, const char* buffer, size_t length) {
+#ifdef RIOT_OS
+    ssize_t result = sock_udp_send(&ms->socket, (uint8_t*)buffer, length, &member->addr);
+    if (result < 0) {
+        MICROSWIM_LOG_ERROR("(microswim_message_send) sock_udp_send failed: (%d) %d %s", (int)result, errno, strerror(-result));
+    }
+#else
     ssize_t result =
         sendto(ms->socket, buffer, length, 0, (struct sockaddr*)(&member->addr), sizeof(member->addr));
     if (result < 0) {
@@ -59,9 +65,30 @@ void microswim_message_send(microswim_t* ms, microswim_member_t* member, const c
     }
 
     // TODO: return result.
+#endif
 }
 
 void microswim_message_print(microswim_message_t* message) {
+#ifdef RIOT_OS
+    MICROSWIM_LOG_DEBUG(
+        "MESSAGE: %s, FROM: %s, STATUS: %d, INCARNATION: %d URI: %d",
+        (message->type == ALIVE_MESSAGE ?
+             "ALIVE MESSAGE" :
+             (message->type == SUSPECT_MESSAGE ?
+                  "SUSPECT MESSAGE" :
+                  (message->type == CONFIRM_MESSAGE ?
+                       "CONFIRM MESSAGE" :
+                       (message->type == PING_MESSAGE ?
+                            "PING MESSAGE" :
+                            (message->type == PING_REQ_MESSAGE ? "PING_REQ_MESSAGE" : "ACK MESSAGE"))))),
+        message->uuid, message->status, message->incarnation, message->addr.port);
+    MICROSWIM_LOG_DEBUG("UPDATES:");
+    for (size_t i = 0; i < message->update_count; i++) {
+        MICROSWIM_LOG_DEBUG(
+            "\t%s: STATUS: %d, INCARNATION: %d", message->mu[i].uuid, message->mu[i].status,
+            message->mu[i].incarnation);
+    }
+#else
     MICROSWIM_LOG_DEBUG(
         "MESSAGE: %s, FROM: %s, STATUS: %d, INCARNATION: %zu, URI: %d",
         (message->type == ALIVE_MESSAGE ?
@@ -74,13 +101,13 @@ void microswim_message_print(microswim_message_t* message) {
                             "PING MESSAGE" :
                             (message->type == PING_REQ_MESSAGE ? "PING_REQ_MESSAGE" : "ACK MESSAGE"))))),
         message->uuid, message->status, message->incarnation, ntohs(message->addr.sin_port));
-
     MICROSWIM_LOG_DEBUG("UPDATES:");
     for (size_t i = 0; i < message->update_count; i++) {
         MICROSWIM_LOG_DEBUG(
             "\t%s: STATUS: %d, INCARNATION: %zu", message->mu[i].uuid, message->mu[i].status,
             message->mu[i].incarnation);
     }
+#endif
 }
 
 /*
@@ -104,6 +131,23 @@ void microswim_message_extract_members(microswim_t* ms, microswim_message_t* mes
 /*
  * @brief Sends an ACK message. TODO: refactor to use `microswim_message_send function.
  */
+
+#ifdef RIOT_OS
+void microswim_ack_message_send(microswim_t* ms, sock_udp_ep_t addr) {
+    microswim_update_t* updates[MAXIMUM_MEMBERS_IN_AN_UPDATE] = { 0 };
+    microswim_message_t message = { 0 };
+
+    unsigned char buffer[BUFFER_SIZE] = { 0 };
+    int update_count = microswim_updates_retrieve(ms, updates);
+    microswim_message_construct(ms, &message, ACK_MESSAGE, updates, update_count);
+    size_t len = microswim_encode_message(&message, buffer, BUFFER_SIZE);
+
+    ssize_t result = sock_udp_send(&ms->socket, buffer, len, &addr);
+    if (result < 0) {
+        MICROSWIM_LOG_ERROR("(microswim_message_send) sendto failed: (%d) %d %s", (int)result, errno, strerror(errno));
+    }
+}
+#else
 void microswim_ack_message_send(microswim_t* ms, struct sockaddr_in addr) {
     microswim_update_t* updates[MAXIMUM_MEMBERS_IN_AN_UPDATE] = { 0 };
     microswim_message_t message = { 0 };
@@ -118,6 +162,7 @@ void microswim_ack_message_send(microswim_t* ms, struct sockaddr_in addr) {
         MICROSWIM_LOG_ERROR("(microswim_ack_message_send) sendto failed.");
     }
 }
+#endif
 
 /*
  * @brief Handles PING message.

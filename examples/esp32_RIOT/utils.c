@@ -1,4 +1,5 @@
 #include "utils.h"
+#include "net/sock/udp.h"
 #include "random.h"
 #include "uuid.h"
 #include "ztimer.h"
@@ -10,7 +11,7 @@ size_t microswim_random(void) {
 }
 
 uint64_t microswim_milliseconds(void) {
-    return ztimer_now(ZTIMER_SEC);
+    return ztimer_now(ZTIMER_MSEC);
 }
 
 void microswim_uuid_generate(char* uuid) {
@@ -19,9 +20,8 @@ void microswim_uuid_generate(char* uuid) {
     uuid_to_string(&uuid_binary, uuid);
 }
 
-void microswim_sockaddr_to_uri(struct sockaddr_in* addr, char* buffer, size_t buffer_size) {
+void microswim_sockaddr_to_uri(sock_udp_ep_t* addr, char* buffer, size_t buffer_size) {
     char ip_str[INET6_ADDRSTRLEN];
-    inet_ntop(AF_INET, &(addr->sin_addr), ip_str, sizeof(ip_str));
-    int port = ntohs(addr->sin_port);
-    snprintf(buffer, buffer_size, "%s:%d", ip_str, port);
+    inet_ntop(AF_INET, &(addr->addr.ipv4), ip_str, sizeof(ip_str));
+    snprintf(buffer, buffer_size, "%s:%d", ip_str, addr->port);
 }
