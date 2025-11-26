@@ -1,4 +1,6 @@
 #include "utils.h"
+#include "microswim_log.h"
+#include "net/ipv4/addr.h"
 #include "net/sock/udp.h"
 #include "random.h"
 #include "uuid.h"
@@ -21,7 +23,8 @@ void microswim_uuid_generate(char* uuid) {
 }
 
 void microswim_sockaddr_to_uri(sock_udp_ep_t* addr, char* buffer, size_t buffer_size) {
-    char ip_str[INET6_ADDRSTRLEN];
-    inet_ntop(AF_INET, &(addr->addr.ipv4), ip_str, sizeof(ip_str));
+    char ip_str[buffer_size];
+    memset(&ip_str, 0, buffer_size);
+    ipv4_addr_to_str(ip_str, (ipv4_addr_t*)&addr->addr.ipv4, sizeof(ip_str));
     snprintf(buffer, buffer_size, "%s:%d", ip_str, addr->port);
 }

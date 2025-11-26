@@ -5,6 +5,7 @@
 #include "member.h"
 #include "microswim.h"
 #include "microswim_log.h"
+#include "utils.h"
 #ifdef CUSTOM_CONFIGURATION
 #include "configuration.h"
 #else

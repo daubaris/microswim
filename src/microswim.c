@@ -38,14 +38,15 @@ void microswim_socket_setup(microswim_t* ms, char* addr, int port) {
     if (addr == NULL || *addr == '\0') {
 #ifdef RIOT_OS
         struct netif* n = netif_default;
+
         if (!n) {
-            printf("No default netif available.\r\n");
+            MICROSWIM_LOG_INFO("No default netif available.");
             return;
         }
 
         const ip4_addr_t* ip = netif_ip4_addr(n);
         if (ip4_addr_isany_val(*ip)) {
-            printf("Interface has no IPv4 address yet (0.0.0.0). Cannot bind.\r\n");
+            MICROSWIM_LOG_INFO("Interface has no IPv4 address yet (0.0.0.0). Cannot bind.\r\n");
             return;
         }
 
@@ -53,7 +54,7 @@ void microswim_socket_setup(microswim_t* ms, char* addr, int port) {
 
         char buffer[IPV4_ADDR_MAX_STR_LEN] = { 0 };
         inet_ntop(AF_INET, &ms->self.addr.addr.ipv4, buffer, IPV4_ADDR_MAX_STR_LEN);
-        printf("Using interface IP: %s\r\n", buffer);
+        MICROSWIM_LOG_INFO("Using interface IP: %s\r\n", buffer);
 #else
         ms->self.addr.sin_addr.s_addr = htonl(INADDR_ANY);
 #endif

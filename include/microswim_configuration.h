@@ -14,6 +14,6 @@
 #define MAXIMUM_PINGS 8
 #define MAXIMUM_EVENTS 10
 
-#define BUFFER_SIZE 1024
+#define BUFFER_SIZE 512
 
 #endif

@@ -160,7 +160,7 @@ int main(void) {
     event_timeout_init(&_failure_detection_step_event_timeout, EVENT_PRIO_MEDIUM, &_failure_detection_step);
     event_timeout_set(&_failure_detection_step_event_timeout, PROTOCOL_PERIOD);
 
-    event_timeout_init(&_deadline_detection_step_event_timeout, EVENT_PRIO_HIGHEST, &_deadline_detection_step);
+    event_timeout_init(&_deadline_detection_step_event_timeout, EVENT_PRIO_MEDIUM, &_deadline_detection_step);
     event_timeout_set(&_deadline_detection_step_event_timeout, DEADLINE_DETECTION_PERIOD);
 
     return 0;
