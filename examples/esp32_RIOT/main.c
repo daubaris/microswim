@@ -29,8 +29,6 @@
 
 #define DEADLINE_DETECTION_PERIOD 1
 
-mutex_t mutex;
-
 static microswim_t ms;
 
 static void _failure_detection_cb(event_t* arg);
@@ -42,9 +40,7 @@ static event_t _deadline_detection_step = { .handler = _deadline_detection_cb };
 static event_timeout_t _deadline_detection_step_event_timeout;
 
 static void _udp_event_handler(sock_udp_t* sock, sock_async_flags_t type, void* arg) {
-    mutex_lock(&mutex);
-    microswim_t* ms = (microswim_t*)arg;
-
+    (void)arg;
     sock_udp_ep_t remote;
 
     if (type & SOCK_ASYNC_MSG_RECV) {
@@ -52,21 +48,17 @@ static void _udp_event_handler(sock_udp_t* sock, sock_async_flags_t type, void* 
         ssize_t bytes = sock_udp_recv(sock, buffer, sizeof(buffer), 0, &remote);
         if (bytes <= 0) {
             MICROSWIM_LOG_DEBUG("sock_udp_recv failure: %i\n", (int)bytes);
-            mutex_unlock(&mutex);
             return;
         }
         buffer[bytes] = '\0';
 
-        microswim_message_handle(ms, buffer, bytes, NULL);
+        microswim_message_handle(&ms, buffer, bytes, NULL);
     }
-    mutex_unlock(&mutex);
 }
 
 static void _failure_detection_cb(event_t* arg) {
     (void)arg;
-    time_t next_step = PROTOCOL_PERIOD;
 
-    mutex_lock(&mutex);
     for (int i = 0; i < GOSSIP_FANOUT; i++) {
         microswim_member_t* member = microswim_member_retrieve(&ms);
         if (member) {
@@ -97,26 +89,20 @@ static void _failure_detection_cb(event_t* arg) {
             printf("%u]\r\n", ms.indices[i]);
         }
     }
-    mutex_unlock(&mutex);
 
-    event_timeout_set(&_failure_detection_step_event_timeout, next_step * US_PER_SEC);
+    event_timeout_set(&_failure_detection_step_event_timeout, PROTOCOL_PERIOD * US_PER_SEC);
 }
 
 static void _deadline_detection_cb(event_t* arg) {
     (void)arg;
-    time_t next_step = DEADLINE_DETECTION_PERIOD;
-
-    mutex_lock(&mutex);
     microswim_ping_reqs_check(&ms);
     microswim_pings_check(&ms);
     microswim_members_check_suspects(&ms);
-    mutex_unlock(&mutex);
 
-    event_timeout_set(&_deadline_detection_step_event_timeout, next_step * US_PER_SEC);
+    event_timeout_set(&_deadline_detection_step_event_timeout, DEADLINE_DETECTION_PERIOD * US_PER_SEC);
 }
 
 int main(void) {
-    mutex_init(&mutex);
     ztimer_sleep(ZTIMER_SEC, 20);
 
     memset(&ms, 0, sizeof(ms));
@@ -156,7 +142,7 @@ int main(void) {
         microswim_update_add(&ms, remote);
     }
 
-    sock_udp_event_init(&ms.socket, EVENT_PRIO_MEDIUM, _udp_event_handler, &ms);
+    sock_udp_event_init(&ms.socket, EVENT_PRIO_MEDIUM, _udp_event_handler, NULL);
     event_timeout_init(&_failure_detection_step_event_timeout, EVENT_PRIO_MEDIUM, &_failure_detection_step);
     event_timeout_set(&_failure_detection_step_event_timeout, PROTOCOL_PERIOD);
 

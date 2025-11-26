@@ -33,7 +33,6 @@ USEMODULE += lwip_sock_ip
 USEMODULE += lwip_ipv4
 USEMODULE += lwip_netif
 USEMODULE += lwip_arp
-USEMODULE += periph_eth
 USEMODULE += lwip_dhcp_auto
 USEMODULE += posix_sockets
 USEMODULE += posix_inet
