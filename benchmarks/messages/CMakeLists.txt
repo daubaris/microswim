@@ -4,6 +4,10 @@ find_package(benchmark REQUIRED)
 
 set(CMAKE_CXX_STANDARD 17)
 
+if(CUSTOM_CONFIGURATION)
+  add_compile_definitions(CUSTOM_CONFIGURATION=1)
+endif()
+
 set(SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/utils.c
     ${PROJECT_SOURCE_DIR}/src/microswim.c
@@ -28,6 +32,10 @@ target_include_directories(messages_json PUBLIC ${PROJECT_BINARY_DIR}
                                                 ${PROJECT_SOURCE_DIR}/include)
 target_include_directories(messages_cbor PUBLIC ${PROJECT_BINARY_DIR}
                                                 ${PROJECT_SOURCE_DIR}/include)
+if(CUSTOM_CONFIGURATION)
+  target_include_directories(messages_json PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+  target_include_directories(messages_cbor PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+endif()
 
-target_link_libraries(messages_json PUBLIC cbor benchmark::benchmark)
-target_link_libraries(messages_cbor PUBLIC cbor benchmark::benchmark)
+target_link_libraries(messages_json PRIVATE benchmark::benchmark)
+target_link_libraries(messages_cbor PRIVATE cbor benchmark::benchmark)

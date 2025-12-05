@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(microswim LANGUAGES C)
+project(microswim LANGUAGES C CXX)
 
 set(EXPORT_COMPILE_COMMANDS
     "Export compile definitions (for debugging purposes)" OFF)
@@ -36,14 +36,13 @@ endif()
 
 if(BUILD_LIBRARY)
   set(SOURCES
-    ${PROJECT_SOURCE_DIR}/src/microswim.c
-    ${PROJECT_SOURCE_DIR}/src/member.c
-    ${PROJECT_SOURCE_DIR}/src/message.c
-    ${PROJECT_SOURCE_DIR}/src/ping.c
-    ${PROJECT_SOURCE_DIR}/src/ping_req.c
-    ${PROJECT_SOURCE_DIR}/src/update.c
-    ${PROJECT_SOURCE_DIR}/src/event.c
-  )
+      ${PROJECT_SOURCE_DIR}/src/microswim.c
+      ${PROJECT_SOURCE_DIR}/src/member.c
+      ${PROJECT_SOURCE_DIR}/src/message.c
+      ${PROJECT_SOURCE_DIR}/src/ping.c
+      ${PROJECT_SOURCE_DIR}/src/ping_req.c
+      ${PROJECT_SOURCE_DIR}/src/update.c
+      ${PROJECT_SOURCE_DIR}/src/event.c)
 
   if(CBOR)
     set(SOURCES ${SOURCES} ${PROJECT_SOURCE_DIR}/src/encode_cbor.c

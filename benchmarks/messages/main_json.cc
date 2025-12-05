@@ -1,7 +1,9 @@
+#include "configuration.h"
 #include "decode.h"
 #include "encode.h"
 #include <benchmark/benchmark.h>
-#include <string.h>
+
+#define BENCHMARK_BUFFER_SIZE 2048
 
 static const char* JSON_STRING =
     "{\"message\": 2, \"uuid\": \"1FA96E9D-AACE-4CA7-83B9-8083A75C7EAB\", \"uri\": "
@@ -14,7 +16,7 @@ static const char* JSON_SINGLE_UPDATE =
 
 static void BENCHMARK_microswim_json_decoding(benchmark::State& state) {
     microswim_message_t message;
-    char buffer[BUFFER_SIZE] = { 0 };
+    char buffer[BENCHMARK_BUFFER_SIZE] = { 0 };
     strncpy(buffer, JSON_STRING, strlen(JSON_STRING));
     for (int i = 0; i < state.range(0); i++) {
         if (state.range(0) > 0) {
@@ -34,8 +36,7 @@ static void BENCHMARK_microswim_json_decoding(benchmark::State& state) {
 
 static void BENCHMARK_microswim_json_encoding(benchmark::State& state) {
     microswim_message_t message;
-    char buffer[BUFFER_SIZE] = { 0 };
-    size_t buffer_size = 0;
+    char buffer[BENCHMARK_BUFFER_SIZE] = { 0 };
     strncpy(buffer, JSON_STRING, strlen(JSON_STRING));
     for (int i = 0; i < state.range(0); i++) {
         if (state.range(0) > 0) {
@@ -47,11 +48,10 @@ static void BENCHMARK_microswim_json_encoding(benchmark::State& state) {
     }
 
     strncat(buffer, "]}", 2);
-
     microswim_decode_message(&message, buffer, strlen(buffer));
 
     for (auto _ : state) {
-        size_t len = microswim_encode_message(&message, (unsigned char*)buffer, BUFFER_SIZE);
+        size_t len = microswim_encode_message(&message, (unsigned char*)buffer, BENCHMARK_BUFFER_SIZE);
         state.counters["message_size"] = len;
     }
 }

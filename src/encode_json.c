@@ -11,7 +11,7 @@ size_t microswim_encode_message(microswim_message_t* message, unsigned char* buf
     char uri_buffer[64];
     microswim_sockaddr_to_uri(&message->addr, uri_buffer, 64);
     int remainder = snprintf(
-        (char*)buffer, BUFFER_SIZE,
+        (char*)buffer, size,
         "{\"message\": %d, \"uuid\": \"%s\", \"uri\": \"%s\", \"status\": %d, \"incarnation\": "
         "%d, "
         "\"updates\": [",
@@ -20,13 +20,13 @@ size_t microswim_encode_message(microswim_message_t* message, unsigned char* buf
         char ub[64] = { 0 };
         microswim_sockaddr_to_uri(&message->mu[i].addr, ub, 64);
         remainder += snprintf(
-            (char*)buffer + remainder, BUFFER_SIZE - remainder,
+            (char*)buffer + remainder, size - remainder,
             "{\"uuid\": \"%s\", \"uri\": \"%s\", \"status\": %d, \"incarnation\": %d}",
             message->mu[i].uuid, ub, message->mu[i].status, message->mu[i].incarnation);
         if (i < message->update_count - 1) {
-            remainder += snprintf((char*)buffer + remainder, BUFFER_SIZE - remainder, ",");
+            remainder += snprintf((char*)buffer + remainder, size - remainder, ",");
         } else {
-            remainder += snprintf((char*)buffer + remainder, BUFFER_SIZE - remainder, "]}");
+            remainder += snprintf((char*)buffer + remainder, size - remainder, "]}");
         }
     }
 

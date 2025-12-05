@@ -33,7 +33,7 @@ static void BENCHMARK_microswim_cbor_decoding(benchmark::State& state) {
     }
 
     for (auto _ : state) {
-        microswim_decode_message(&message, buffer, sizeof(buffer));
+        microswim_decode_message(&message, (const char*)buffer, sizeof(buffer));
         state.counters["message_size"] = offset;
     }
 }
@@ -49,7 +49,7 @@ static void BENCHMARK_microswim_cbor_encoding(benchmark::State& state) {
         memcpy(buffer + offset, CBOR_SINGLE_UPDATE, sizeof(CBOR_SINGLE_UPDATE));
         offset += sizeof(CBOR_SINGLE_UPDATE);
     }
-    microswim_decode_message(&message, buffer, sizeof(buffer));
+    microswim_decode_message(&message, (const char*)buffer, sizeof(buffer));
 
     for (auto _ : state) {
         unsigned char buffer[BUFFER_SIZE] = { 0 };
