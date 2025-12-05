@@ -1,4 +1,5 @@
-#include "message.h"
+#include "decode.h"
+#include "encode.h"
 #include <benchmark/benchmark.h>
 #include <string.h>
 
@@ -27,7 +28,7 @@ static void BENCHMARK_microswim_json_decoding(benchmark::State& state) {
     strncat(buffer, "]}", 2);
 
     for (auto _ : state) {
-        microswim_json_decode_message(&message, buffer, strlen(buffer));
+        microswim_decode_message(&message, buffer, strlen(buffer));
     }
 }
 
@@ -47,10 +48,10 @@ static void BENCHMARK_microswim_json_encoding(benchmark::State& state) {
 
     strncat(buffer, "]}", 2);
 
-    microswim_json_decode_message(&message, buffer, strlen(buffer));
+    microswim_decode_message(&message, buffer, strlen(buffer));
 
     for (auto _ : state) {
-        size_t len = microswim_json_encode_message(&message, (unsigned char*)buffer, BUFFER_SIZE);
+        size_t len = microswim_encode_message(&message, (unsigned char*)buffer, BUFFER_SIZE);
         state.counters["message_size"] = len;
     }
 }

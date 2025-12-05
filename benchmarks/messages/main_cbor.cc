@@ -1,4 +1,5 @@
-#include "message.h"
+#include "decode.h"
+#include "encode.h"
 #include <benchmark/benchmark.h>
 #include <string.h>
 
@@ -32,7 +33,7 @@ static void BENCHMARK_microswim_cbor_decoding(benchmark::State& state) {
     }
 
     for (auto _ : state) {
-        microswim_cbor_decode_message(&message, buffer, sizeof(buffer));
+        microswim_decode_message(&message, buffer, sizeof(buffer));
         state.counters["message_size"] = offset;
     }
 }
@@ -48,11 +49,11 @@ static void BENCHMARK_microswim_cbor_encoding(benchmark::State& state) {
         memcpy(buffer + offset, CBOR_SINGLE_UPDATE, sizeof(CBOR_SINGLE_UPDATE));
         offset += sizeof(CBOR_SINGLE_UPDATE);
     }
-    microswim_cbor_decode_message(&message, buffer, sizeof(buffer));
+    microswim_decode_message(&message, buffer, sizeof(buffer));
 
     for (auto _ : state) {
         unsigned char buffer[BUFFER_SIZE] = { 0 };
-        size_t len = microswim_cbor_encode_message(&message, buffer, BUFFER_SIZE);
+        size_t len = microswim_encode_message(&message, buffer, BUFFER_SIZE);
         state.counters["message_size"] = len;
     }
 }

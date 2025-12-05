@@ -1,13 +1,15 @@
 #include "configuration.h"
-#include "log.h"
+#include "encode.h"
 #include "member.h"
 #include "message.h"
 #include "microswim.h"
+#include "microswim_log.h"
 #include "ping.h"
 #include "ping_req.h"
 #include "update.h"
 #include "utils.h"
 #include <hiredis/hiredis.h>
+#include <pthread.h>
 #include <stdlib.h>
 #include <sys/time.h>
 #include <unistd.h>
@@ -16,12 +18,13 @@
 // until convergence.
 int messages = 0;
 size_t total_message_size = 0;
+pthread_mutex_t mutex;
 
 void* listener(void* params) {
     microswim_t* ms = (microswim_t*)params;
 
     for (;;) {
-        pthread_mutex_lock(&ms->mutex);
+        pthread_mutex_lock(&mutex);
         microswim_ping_reqs_check(ms);
         microswim_pings_check(ms);
         microswim_members_check_suspects(ms);
@@ -39,7 +42,7 @@ void* listener(void* params) {
             microswim_message_handle(ms, buffer, bytes, NULL);
         }
 
-        pthread_mutex_unlock(&ms->mutex);
+        pthread_mutex_unlock(&mutex);
         usleep(100 * 10);
     }
 }
@@ -53,11 +56,11 @@ void* failure_detection(void* params) {
     redisReply* reply;
     redisContext* ctx = redisConnect("127.0.0.1", 6379);
     if (ctx->err) {
-        LOG_ERROR("Redis error: %s", ctx->errstr);
+        MICROSWIM_LOG_ERROR("Redis error: %s", ctx->errstr);
         exit(-1);
     } else {
-        LOG_INFO("Successfully connected to Redis!");
-        LOG_INFO(
+        MICROSWIM_LOG_INFO("Successfully connected to Redis!");
+        MICROSWIM_LOG_INFO(
             "MAXIMUM_MEMBERS: %d, GOSSIP_FANOUT: %d, MAXIMUM_MEMBERS_IN_AN_UPDATE: %d",
             MAXIMUM_MEMBERS, GOSSIP_FANOUT, MAXIMUM_MEMBERS_IN_AN_UPDATE);
     }
@@ -85,19 +88,19 @@ void* failure_detection(void* params) {
 
                 redisReply* reply = redisCommand(ctx, "SET result:%d %s", port, query);
                 if (reply == NULL) {
-                    LOG_ERROR("SET command failed.");
+                    MICROSWIM_LOG_ERROR("SET command failed.");
                     redisFree(ctx);
                     exit(-2);
                 }
                 inserted = true;
             }
 
-            LOG_INFO(
+            MICROSWIM_LOG_INFO(
                 "Gossip rounds to reach %d members: %zu, and it took %ld.%06ld", MAXIMUM_MEMBERS,
                 rounds, (long int)tval_result.tv_sec, (long int)tval_result.tv_usec);
         }
 
-        pthread_mutex_lock(&ms->mutex);
+        pthread_mutex_lock(&mutex);
 
         for (int i = 0; i < GOSSIP_FANOUT; i++) {
             microswim_member_t* member = microswim_member_retrieve(ms);
@@ -114,11 +117,11 @@ void* failure_detection(void* params) {
             }
         }
 
-        LOG_DEBUG("ms->ping_count: %zu", ms->ping_count);
-        LOG_DEBUG("ms->ping_req_count: %zu", ms->ping_req_count);
-        LOG_DEBUG("ms->update_count: %zu", ms->update_count);
-        LOG_DEBUG("ms->member_count: %zu", ms->member_count);
-        LOG_DEBUG("ms->confirmed_count: %zu", ms->confirmed_count);
+        MICROSWIM_LOG_DEBUG("ms->ping_count: %zu", ms->ping_count);
+        MICROSWIM_LOG_DEBUG("ms->ping_req_count: %zu", ms->ping_req_count);
+        MICROSWIM_LOG_DEBUG("ms->update_count: %zu", ms->update_count);
+        MICROSWIM_LOG_DEBUG("ms->member_count: %zu", ms->member_count);
+        MICROSWIM_LOG_DEBUG("ms->confirmed_count: %zu", ms->confirmed_count);
         printf("[DEBUG] ms->indices: [");
         for (int i = 0; i < ms->member_count; i++) {
             if (i < ms->member_count - 1) {
@@ -128,7 +131,7 @@ void* failure_detection(void* params) {
             }
         }
 
-        pthread_mutex_unlock(&ms->mutex);
+        pthread_mutex_unlock(&mutex);
         usleep(PROTOCOL_PERIOD * 1000000);
     }
 }
@@ -158,7 +161,7 @@ int main(int argc, char** argv) {
     member.incarnation = 0;
 
     if (inet_pton(AF_INET, argv[3], &(member.addr.sin_addr)) != 1) {
-        LOG_ERROR("Invalid IP address: %s\n", argv[3]);
+        MICROSWIM_LOG_ERROR("Invalid IP address: %s\n", argv[3]);
         return 1;
     }
 
@@ -176,7 +179,7 @@ int main(int argc, char** argv) {
     pthread_join(pl_thread, NULL);
 
     close(ms.socket);
-    pthread_mutex_destroy(&ms.mutex);
+    pthread_mutex_destroy(&mutex);
 
     return 0;
 }
