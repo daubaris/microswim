@@ -1,0 +1,11 @@
+FROM alpine:3.21
+
+WORKDIR /microswim
+
+RUN apk add --no-cache hiredis libuuid libcbor sqlite-libs
+
+COPY build/benchmarks/convergence/convergence /microswim/convergence
+
+EXPOSE 8000
+CMD ["./convergence"]
+
