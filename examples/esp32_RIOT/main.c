@@ -27,7 +27,7 @@
 #include <sys/select.h>
 #include <unistd.h>
 
-#define DEADLINE_DETECTION_PERIOD 1
+#define DEADLINE_DETECTION_PERIOD 0.1
 
 static microswim_t ms;
 

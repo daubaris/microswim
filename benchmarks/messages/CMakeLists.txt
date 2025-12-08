@@ -37,5 +37,5 @@ if(CUSTOM_CONFIGURATION)
   target_include_directories(messages_cbor PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 endif()
 
-target_link_libraries(messages_json PRIVATE benchmark::benchmark)
-target_link_libraries(messages_cbor PRIVATE cbor benchmark::benchmark)
+target_link_libraries(messages_json PUBLIC uuid benchmark::benchmark)
+target_link_libraries(messages_cbor PUBLIC cbor uuid benchmark::benchmark)
