@@ -1,3 +1,3 @@
-[submodule "/home/paul/microswim/examples/esp32_RIOT/RIOT"]
-	path = /home/paul/microswim/examples/esp32_RIOT/RIOT
+[submodule "/home/paul/microswim/examples/mcu/RIOT"]
+	path = /home/paul/microswim/examples/mcu/RIOT
 	url = https://github.com/RIOT-OS/RIOT
