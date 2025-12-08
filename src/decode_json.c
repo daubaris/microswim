@@ -45,43 +45,75 @@ microswim_message_type_t microswim_decode_message_type(char* buffer, ssize_t len
 
 #ifdef RIOT_OS
 static void microswim_decode_uri_to_sockaddr(sock_udp_ep_t* addr, char* buffer, size_t length) {
-    char* colon = strchr(buffer, ':');
-    if (colon) {
-        int port_length = (buffer + length) - (colon);
-        char p[port_length - 1];
-        memset(p, 0, sizeof(p));
-        memcpy(p, colon + 1, sizeof(p));
-        buffer[length - port_length] = '\0';
-        p[port_length] = '\0';
-        int port = strtol(p, NULL, 10);
-        if (port) {
-            if (inet_pton(AF_INET, buffer, &(addr->addr)) != 1) {
-                MICROSWIM_LOG_ERROR("Invalid IP address: %s\n", buffer);
-            }
-            addr->port = port;
-            addr->family = AF_INET;
-        }
+    memset(addr, 0, sizeof(*addr));
+
+    const char* colon = memchr(buffer, ':', length);
+    if (!colon) {
+        return;
     }
+
+    size_t ip_len = colon - buffer;
+    size_t port_len = length - ip_len - 1;
+
+    char ip[64];
+    char port_str[8];
+
+    memcpy(ip, buffer, ip_len);
+    ip[ip_len] = '\0';
+
+    memcpy(port_str, colon + 1, port_len);
+    port_str[port_len] = '\0';
+
+    char* end;
+    long port = strtol(port_str, &end, 10);
+
+    if (*end != '\0' || port <= 0 || port > 65535) {
+        return;
+    }
+
+    if (inet_pton(AF_INET, ip, &(addr->addr)) != 1) {
+        MICROSWIM_LOG_ERROR("Invalid IP address: %s\n", ip);
+        return;
+    }
+
+    addr->family = AF_INET;
+    addr->port = port;
 }
 #else
-static void microswim_decode_uri_to_sockaddr(struct sockaddr_in* addr, char* buffer, size_t length) {
-    char* colon = strchr(buffer, ':');
-    if (colon) {
-        int port_length = (buffer + length) - (colon);
-        char p[port_length - 1];
-        memset(p, 0, sizeof(p));
-        memcpy(p, colon + 1, sizeof(p));
-        buffer[length - port_length] = '\0';
-        p[port_length] = '\0';
-        int port = strtol(p, NULL, 10);
-        if (port) {
-            if (inet_pton(AF_INET, buffer, &(addr->sin_addr)) != 1) {
-                MICROSWIM_LOG_ERROR("Invalid IP address: %s\n", buffer);
-            }
-            addr->sin_port = htons(port);
-            addr->sin_family = AF_INET;
-        }
+static void microswim_decode_uri_to_sockaddr(struct sockaddr_in* addr, const char* buffer, size_t length) {
+    memset(addr, 0, sizeof(*addr));
+
+    const char* colon = memchr(buffer, ':', length);
+    if (!colon) {
+        return;
     }
+
+    size_t ip_len = colon - buffer;
+    size_t port_len = length - ip_len - 1;
+
+    char ip[64];
+    char port_str[8];
+
+    memcpy(ip, buffer, ip_len);
+    ip[ip_len] = '\0';
+
+    memcpy(port_str, colon + 1, port_len);
+    port_str[port_len] = '\0';
+
+    char* end;
+    long port = strtol(port_str, &end, 10);
+
+    if (*end != '\0' || port <= 0 || port > 65535) {
+        return;
+    }
+
+    if (inet_pton(AF_INET, ip, &addr->sin_addr) != 1) {
+        MICROSWIM_LOG_ERROR("Invalid IP address: %s\n", ip);
+        return;
+    }
+
+    addr->sin_family = AF_INET;
+    addr->sin_port = htons((uint16_t)port);
 }
 #endif
 

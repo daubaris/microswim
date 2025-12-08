@@ -6,8 +6,6 @@
 #include <stdio.h>
 
 size_t microswim_encode_message(microswim_message_t* message, unsigned char* buffer, size_t size) {
-    (void)size;
-
     char uri_buffer[64];
     microswim_sockaddr_to_uri(&message->addr, uri_buffer, 64);
     int remainder = snprintf(

@@ -71,7 +71,9 @@ static void _failure_detection_cb(event_t* arg) {
             size_t length = microswim_encode_message(&message, buffer, BUFFER_SIZE);
 
             microswim_message_send(&ms, member, (const char*)buffer, length);
-            MICROSWIM_LOG_DEBUG("Sending PING message to %s", member->uuid);
+            char uri_buffer[64] = { 0 };
+            microswim_sockaddr_to_uri(&member->addr, uri_buffer, 64);
+            MICROSWIM_LOG_DEBUG("Sending PING message to %s (%s)", member->uuid, uri_buffer);
             microswim_ping_add(&ms, member);
         }
     }
