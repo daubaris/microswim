@@ -30,8 +30,7 @@ target_include_directories(convergence PUBLIC ${PROJECT_BINARY_DIR}
                                               ${PROJECT_SOURCE_DIR}/include)
 
 if(CUSTOM_CONFIGURATION)
-  target_include_directories(convergence PUBLIC cbor hiredis
-                                                ${CMAKE_CURRENT_SOURCE_DIR})
+  target_include_directories(convergence PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 endif()
 
-target_link_libraries(convergence PUBLIC cbor hiredis)
+target_link_libraries(convergence PUBLIC cbor hiredis uuid)

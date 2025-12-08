@@ -12,4 +12,5 @@ Launch the experiment using:
 python3 scripts/spawn.py --header benchmarks/convergence/configuration.h
 ```
 
+Make sure to remove the `build` folder because otherwise you will receive a `CMakeCache` error. 
 
