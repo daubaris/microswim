@@ -8,6 +8,7 @@
 #include "ping_req.h"
 #include "update.h"
 #include "utils.h"
+#include <fcntl.h>
 #include <hiredis/hiredis.h>
 #include <pthread.h>
 #include <stdlib.h>
@@ -142,6 +143,12 @@ int main(int argc, char** argv) {
     microswim_t ms;
     memset(&ms, 0, sizeof(ms));
     microswim_socket_setup(&ms, argv[1], atoi(argv[2]));
+
+    int flags = fcntl(ms.socket, F_GETFL, 0);
+    if (fcntl(ms.socket, F_SETFL, flags | O_NONBLOCK) < 0) {
+        perror("Failed to set non-blocking");
+        close(ms.socket);
+    }
 
     char uuid[UUID_SIZE];
     microswim_uuid_generate(uuid);
