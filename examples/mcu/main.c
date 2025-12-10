@@ -102,7 +102,7 @@ static void _deadline_detection_cb(event_t* arg) {
     microswim_pings_check(&ms);
     microswim_members_check_suspects(&ms);
 
-    event_timeout_set(&_deadline_detection_step_event_timeout, DEADLINE_DETECTION_PERIOD * US_PER_SEC);
+    event_timeout_set(&_deadline_detection_step_event_timeout, DEADLINE_DETECTION_PERIOD);
 }
 
 void wait_for_ipv4(void) {
