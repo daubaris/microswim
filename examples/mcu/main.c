@@ -1,6 +1,7 @@
 #include "encode.h"
 #include "event/thread.h"
 #include "event/timeout.h"
+#include "lwip/netif.h"
 #include "member.h"
 #include "message.h"
 #include "microswim.h"
@@ -27,7 +28,7 @@
 #include <sys/select.h>
 #include <unistd.h>
 
-#define DEADLINE_DETECTION_PERIOD 0.1
+#define DEADLINE_DETECTION_PERIOD 100000
 
 static microswim_t ms;
 
@@ -104,8 +105,20 @@ static void _deadline_detection_cb(event_t* arg) {
     event_timeout_set(&_deadline_detection_step_event_timeout, DEADLINE_DETECTION_PERIOD * US_PER_SEC);
 }
 
+void wait_for_ipv4(void) {
+    struct netif* n;
+    while (!(n = netif_default)) {
+        ztimer_sleep(ZTIMER_MSEC, 100);
+    }
+
+    while (ip4_addr_isany_val(*netif_ip4_addr(n))) {
+        MICROSWIM_LOG_INFO("Waiting for DHCP/IPv4…");
+        ztimer_sleep(ZTIMER_SEC, 1);
+    }
+}
+
 int main(void) {
-    ztimer_sleep(ZTIMER_SEC, 20);
+    wait_for_ipv4();
 
     memset(&ms, 0, sizeof(ms));
     microswim_socket_setup(&ms, NULL, 8000);
