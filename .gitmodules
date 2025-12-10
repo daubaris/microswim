@@ -1,3 +1,0 @@
-[submodule "/home/paul/microswim/examples/mcu/RIOT"]
-	path = /home/paul/microswim/examples/mcu/RIOT
-	url = https://github.com/RIOT-OS/RIOT
