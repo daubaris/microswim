@@ -4,7 +4,7 @@ SRC += src/message.c
 SRC += src/ping.c
 SRC += src/ping_req.c
 SRC += src/update.c
-SRC += src/event.c
+SRC += src/m_event.c
 
 CFLAGS += -DMICROSWIM_JSON=1
 CFLAGS += -DRIOT_OS=1
