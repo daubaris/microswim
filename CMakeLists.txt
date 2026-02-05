@@ -42,7 +42,7 @@ if(BUILD_LIBRARY)
       ${PROJECT_SOURCE_DIR}/src/ping.c
       ${PROJECT_SOURCE_DIR}/src/ping_req.c
       ${PROJECT_SOURCE_DIR}/src/update.c
-      ${PROJECT_SOURCE_DIR}/src/event.c)
+      ${PROJECT_SOURCE_DIR}/src/m_event.c)
 
   if(CBOR)
     set(SOURCES ${SOURCES} ${PROJECT_SOURCE_DIR}/src/encode_cbor.c
