@@ -51,6 +51,11 @@ void test_members_check_adds_confirmed_member(void);
 void test_members_check_updates_existing(void);
 void test_get_ping_req_candidates(void);
 void test_get_ping_req_candidates_unique(void);
+void test_member_add_copies_ipso(void);
+void test_member_update_copies_ipso_on_state_change(void);
+void test_member_update_no_ipso_overwrite_when_already_set(void);
+void test_member_update_copies_ipso_same_incarnation(void);
+void test_members_check_adds_new_member_with_ipso(void);
 
 /* test_message.c */
 void test_message_construct_ping(void);
@@ -59,6 +64,8 @@ void test_message_construct_status(void);
 void test_message_extract_adds_new(void);
 void test_message_extract_updates_existing(void);
 void test_message_send_invalid_socket(void);
+void test_message_construct_populates_ipso_from_registry(void);
+void test_message_construct_no_ipso_when_no_registry(void);
 
 /* test_ping.c */
 void test_ping_add(void);
@@ -118,6 +125,8 @@ void test_cbor_roundtrip_ack_with_updates(void);
 void test_cbor_roundtrip_suspect(void);
 void test_cbor_malformed_buffer(void);
 void test_cbor_roundtrip_empty_updates(void);
+void test_cbor_roundtrip_with_ipso_objects(void);
+void test_cbor_roundtrip_empty_ipso(void);
 #endif
 
 int main(void) {
@@ -178,6 +187,13 @@ int main(void) {
     RUN_TEST(test_get_ping_req_candidates);
     RUN_TEST(test_get_ping_req_candidates_unique);
 
+    /* Member IPSO */
+    RUN_TEST(test_member_add_copies_ipso);
+    RUN_TEST(test_member_update_copies_ipso_on_state_change);
+    RUN_TEST(test_member_update_no_ipso_overwrite_when_already_set);
+    RUN_TEST(test_member_update_copies_ipso_same_incarnation);
+    RUN_TEST(test_members_check_adds_new_member_with_ipso);
+
     /* Message */
     RUN_TEST(test_message_construct_ping);
     RUN_TEST(test_message_construct_ack);
@@ -185,6 +201,8 @@ int main(void) {
     RUN_TEST(test_message_extract_adds_new);
     RUN_TEST(test_message_extract_updates_existing);
     RUN_TEST(test_message_send_invalid_socket);
+    RUN_TEST(test_message_construct_populates_ipso_from_registry);
+    RUN_TEST(test_message_construct_no_ipso_when_no_registry);
 
     /* Ping */
     RUN_TEST(test_ping_add);
@@ -244,6 +262,8 @@ int main(void) {
     RUN_TEST(test_cbor_roundtrip_suspect);
     RUN_TEST(test_cbor_malformed_buffer);
     RUN_TEST(test_cbor_roundtrip_empty_updates);
+    RUN_TEST(test_cbor_roundtrip_with_ipso_objects);
+    RUN_TEST(test_cbor_roundtrip_empty_ipso);
 #endif
 
     return UNITY_END();

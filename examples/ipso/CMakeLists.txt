@@ -20,7 +20,8 @@ set(SOURCES
     ${PROJECT_SOURCE_DIR}/src/message.c
     ${PROJECT_SOURCE_DIR}/src/ping.c
     ${PROJECT_SOURCE_DIR}/src/ping_req.c
-    ${PROJECT_SOURCE_DIR}/src/update.c)
+    ${PROJECT_SOURCE_DIR}/src/update.c
+    ${PROJECT_SOURCE_DIR}/src/ipso.c)
 
 if(CBOR)
   set(SOURCES ${SOURCES} ${PROJECT_SOURCE_DIR}/src/encode_cbor.c
@@ -30,16 +31,16 @@ elseif(JSON)
               ${PROJECT_SOURCE_DIR}/src/decode_json.c)
 endif()
 
-add_executable(darwin ${SOURCES})
+add_executable(ipso ${SOURCES})
 
-target_include_directories(darwin PUBLIC ${PROJECT_BINARY_DIR}
+target_include_directories(ipso PUBLIC ${PROJECT_BINARY_DIR}
                                          ${PROJECT_SOURCE_DIR}/include)
-target_link_libraries(darwin PUBLIC)
+target_link_libraries(ipso PUBLIC)
 
 if(CUSTOM_CONFIGURATION)
-  target_include_directories(darwin PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+  target_include_directories(ipso PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 endif()
 
 if(CBOR)
-  target_link_libraries(darwin PUBLIC cbor)
+  target_link_libraries(ipso PUBLIC cbor)
 endif()

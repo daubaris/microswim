@@ -1,4 +1,5 @@
 #include "constants.h"
+#include "ipso.h"
 #include "member.h"
 #include "microswim.h"
 #include "ping.h"
@@ -648,6 +649,129 @@ void test_get_ping_req_candidates_unique(void) {
             TEST_ASSERT_NOT_EQUAL(candidates[i], candidates[j]);
         }
     }
+
+    test_helper_teardown_ms(&ms);
+}
+
+void test_member_add_copies_ipso(void) {
+    microswim_t ms = { 0 };
+    test_helper_init_ms(&ms, "SELF-IPSO-01", 13000);
+
+    char uuid[UUID_SIZE];
+    test_helper_seed_uuid(uuid, 300);
+    microswim_member_t m = test_helper_make_member(uuid, 13001);
+    m.ipso_object_count = 2;
+    m.ipso_objects[0] = (ipso_object_id_t){ .oid = 3303, .iid = 0 };
+    m.ipso_objects[1] = (ipso_object_id_t){ .oid = 3311, .iid = 0 };
+
+    microswim_member_t* added = microswim_member_add(&ms, m);
+    TEST_ASSERT_NOT_NULL(added);
+    TEST_ASSERT_EQUAL_UINT(2, added->ipso_object_count);
+    TEST_ASSERT_EQUAL_UINT16(3303, added->ipso_objects[0].oid);
+    TEST_ASSERT_EQUAL_UINT16(0, added->ipso_objects[0].iid);
+    TEST_ASSERT_EQUAL_UINT16(3311, added->ipso_objects[1].oid);
+    TEST_ASSERT_EQUAL_UINT16(0, added->ipso_objects[1].iid);
+
+    test_helper_teardown_ms(&ms);
+}
+
+void test_member_update_copies_ipso_on_state_change(void) {
+    microswim_t ms = { 0 };
+    test_helper_init_ms(&ms, "SELF-IPSO-02", 13010);
+
+    char uuid[UUID_SIZE];
+    test_helper_seed_uuid(uuid, 301);
+    microswim_member_t* ex = test_helper_add_member(&ms, uuid, 13011);
+    ex->status = ALIVE;
+    ex->incarnation = 1;
+    ex->ipso_object_count = 0;
+
+    microswim_member_t nw = test_helper_make_member(uuid, 13011);
+    nw.status = ALIVE;
+    nw.incarnation = 2;
+    nw.ipso_object_count = 1;
+    nw.ipso_objects[0] = (ipso_object_id_t){ .oid = 3303, .iid = 0 };
+
+    microswim_member_update(&ms, ex, &nw);
+    TEST_ASSERT_EQUAL_UINT(1, ex->ipso_object_count);
+    TEST_ASSERT_EQUAL_UINT16(3303, ex->ipso_objects[0].oid);
+
+    test_helper_teardown_ms(&ms);
+}
+
+void test_member_update_no_ipso_overwrite_when_already_set(void) {
+    microswim_t ms = { 0 };
+    test_helper_init_ms(&ms, "SELF-IPSO-03", 13020);
+
+    char uuid[UUID_SIZE];
+    test_helper_seed_uuid(uuid, 302);
+    microswim_member_t* ex = test_helper_add_member(&ms, uuid, 13021);
+    ex->status = ALIVE;
+    ex->incarnation = 5;
+    ex->ipso_object_count = 1;
+    ex->ipso_objects[0] = (ipso_object_id_t){ .oid = 3303, .iid = 0 };
+
+    microswim_member_t nw = test_helper_make_member(uuid, 13021);
+    nw.status = ALIVE;
+    nw.incarnation = 3;
+    nw.ipso_object_count = 2;
+    nw.ipso_objects[0] = (ipso_object_id_t){ .oid = 9999, .iid = 1 };
+    nw.ipso_objects[1] = (ipso_object_id_t){ .oid = 9998, .iid = 2 };
+
+    microswim_member_update(&ms, ex, &nw);
+    /* IPSO already set — should not be overwritten */
+    TEST_ASSERT_EQUAL_UINT(1, ex->ipso_object_count);
+    TEST_ASSERT_EQUAL_UINT16(3303, ex->ipso_objects[0].oid);
+
+    test_helper_teardown_ms(&ms);
+}
+
+void test_member_update_copies_ipso_same_incarnation(void) {
+    microswim_t ms = { 0 };
+    test_helper_init_ms(&ms, "SELF-IPSO-05", 13040);
+
+    char uuid[UUID_SIZE];
+    test_helper_seed_uuid(uuid, 304);
+    microswim_member_t* ex = test_helper_add_member(&ms, uuid, 13041);
+    ex->status = ALIVE;
+    ex->incarnation = 0;
+    ex->ipso_object_count = 0;
+
+    microswim_member_t nw = test_helper_make_member(uuid, 13041);
+    nw.status = ALIVE;
+    nw.incarnation = 0; /* same incarnation */
+    nw.ipso_object_count = 2;
+    nw.ipso_objects[0] = (ipso_object_id_t){ .oid = 3303, .iid = 0 };
+    nw.ipso_objects[1] = (ipso_object_id_t){ .oid = 3304, .iid = 0 };
+
+    microswim_member_update(&ms, ex, &nw);
+    TEST_ASSERT_EQUAL_UINT(2, ex->ipso_object_count);
+    TEST_ASSERT_EQUAL_UINT16(3303, ex->ipso_objects[0].oid);
+    TEST_ASSERT_EQUAL_UINT16(3304, ex->ipso_objects[1].oid);
+
+    test_helper_teardown_ms(&ms);
+}
+
+void test_members_check_adds_new_member_with_ipso(void) {
+    microswim_t ms = { 0 };
+    test_helper_init_ms(&ms, "SELF-IPSO-04", 13030);
+
+    char uuid[UUID_SIZE];
+    test_helper_seed_uuid(uuid, 303);
+    microswim_member_t m = test_helper_make_member(uuid, 13031);
+    m.ipso_object_count = 2;
+    m.ipso_objects[0] = (ipso_object_id_t){ .oid = 3303, .iid = 0 };
+    m.ipso_objects[1] = (ipso_object_id_t){ .oid = 3304, .iid = 0 };
+
+    size_t before = ms.member_count;
+    microswim_members_check(&ms, &m);
+    TEST_ASSERT_EQUAL_UINT(before + 1, ms.member_count);
+
+    microswim_member_t* found = microswim_member_find(&ms, &m);
+    TEST_ASSERT_NOT_NULL(found);
+    TEST_ASSERT_EQUAL_UINT(2, found->ipso_object_count);
+    TEST_ASSERT_EQUAL_UINT16(3303, found->ipso_objects[0].oid);
+    TEST_ASSERT_EQUAL_UINT16(3304, found->ipso_objects[1].oid);
 
     test_helper_teardown_ms(&ms);
 }

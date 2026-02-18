@@ -17,6 +17,22 @@
 #include <errno.h>
 #include <string.h>
 
+static void microswim_populate_self_ipso(microswim_t* ms, ipso_object_id_t* objects, size_t* count) {
+    if (ms->registry == NULL) {
+        *count = 0;
+        return;
+    }
+    size_t n = ms->registry->instance_count;
+    if (n > MAXIMUM_IPSO_OBJECTS) {
+        n = MAXIMUM_IPSO_OBJECTS;
+    }
+    for (size_t i = 0; i < n; i++) {
+        objects[i].oid = ms->registry->instances[i].oid;
+        objects[i].iid = ms->registry->instances[i].iid;
+    }
+    *count = n;
+}
+
 /*
  * @brief Constructs a status message.
  */
@@ -28,6 +44,7 @@ void microswim_status_message_construct(
     message->addr = ms->self.addr;
     message->status = ms->self.status;
     message->incarnation = ms->self.incarnation;
+    microswim_populate_self_ipso(ms, message->ipso_objects, &message->ipso_object_count);
     message->mu[0] = *member;
     message->update_count = 1;
 }
@@ -44,6 +61,7 @@ void microswim_message_construct(
     message->addr = ms->self.addr;
     message->status = ms->self.status;
     message->incarnation = ms->self.incarnation;
+    microswim_populate_self_ipso(ms, message->ipso_objects, &message->ipso_object_count);
 
     for (size_t i = 0; i < update_count; i++) {
         message->mu[i] = *updates[i]->member;
@@ -108,6 +126,10 @@ void microswim_message_print(microswim_message_t* message) {
             "\t%s: STATUS: %d, INCARNATION: %zu", message->mu[i].uuid, message->mu[i].status,
             message->mu[i].incarnation);
     }
+    MICROSWIM_LOG_DEBUG("OBJECTS:");
+    for (size_t i = 0; i < message->ipso_object_count; i++) {
+        MICROSWIM_LOG_DEBUG("\t%hu/%hu", message->ipso_objects[i].oid, message->ipso_objects[i].iid);
+    }
 #endif
 }
 
@@ -115,11 +137,13 @@ void microswim_message_print(microswim_message_t* message) {
  * @brief Extracts information from the message.
  */
 void microswim_message_extract_members(microswim_t* ms, microswim_message_t* message) {
-    microswim_member_t self;
+    microswim_member_t self = { 0 };
     strncpy((char*)self.uuid, (char*)message->uuid, UUID_SIZE);
     self.addr = message->addr;
     self.status = message->status;
     self.incarnation = message->incarnation;
+    self.ipso_object_count = message->ipso_object_count;
+    memcpy(self.ipso_objects, message->ipso_objects, message->ipso_object_count * sizeof(ipso_object_id_t));
 
     microswim_members_check(ms, &self);
 

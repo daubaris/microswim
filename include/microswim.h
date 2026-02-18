@@ -17,6 +17,7 @@ extern "C" {
 #endif
 
 #include "constants.h"
+#include "ipso.h"
 
 #ifdef CUSTOM_CONFIGURATION
 #include "configuration.h"
@@ -52,6 +53,8 @@ typedef struct {
     microswim_member_status_t status;
     size_t incarnation;
     uint64_t timeout; // NOTE: Suspicion timeout
+    ipso_object_id_t ipso_objects[MAXIMUM_IPSO_OBJECTS];
+    size_t ipso_object_count;
 } microswim_member_t;
 
 typedef struct {
@@ -82,6 +85,8 @@ typedef struct {
 #endif
     microswim_member_status_t status;
     size_t incarnation;
+    ipso_object_id_t ipso_objects[MAXIMUM_IPSO_OBJECTS];
+    size_t ipso_object_count;
     microswim_member_t mu[MAXIMUM_UPDATES];
     size_t update_count;
 } microswim_message_t;
@@ -124,6 +129,7 @@ typedef struct {
     size_t ping_req_count;
     size_t event_count;
     size_t round_robin_index;
+    ipso_registry_t* registry;
 } microswim_t;
 
 void microswim_socket_setup(microswim_t* ms, char* addr, int port);

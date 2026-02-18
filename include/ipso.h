@@ -10,6 +10,11 @@ typedef uint16_t ipso_oid_t;
 typedef uint16_t ipso_iid_t;
 typedef uint16_t ipso_rid_t;
 
+typedef struct {
+    ipso_oid_t oid;
+    ipso_iid_t iid;
+} ipso_object_id_t;
+
 typedef enum {
     IPSO_T_I64,
     IPSO_T_U64,

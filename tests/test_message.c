@@ -1,4 +1,5 @@
 #include "constants.h"
+#include "ipso.h"
 #include "member.h"
 #include "message.h"
 #include "microswim.h"
@@ -126,4 +127,53 @@ void test_message_send_invalid_socket(void) {
 
     /* Should not crash -- sendto returns EBADF */
     microswim_message_send(&ms, &m, "test", 4);
+}
+
+/* Construct message populates IPSO from registry */
+void test_message_construct_populates_ipso_from_registry(void) {
+    microswim_t ms = { 0 };
+    test_helper_init_ms(&ms, "SELF-MSG-07", 15060);
+
+    static int64_t temp = 25;
+    ipso_resource_t res[] = {
+        { .rid = 5700, .type = IPSO_T_I64, .storage = &temp, .storage_len = sizeof(temp), .set = NULL },
+    };
+    ipso_instance_t insts[] = {
+        { .oid = 3303, .iid = 0, .resources = res, .resource_count = 1 },
+        { .oid = 3311, .iid = 0, .resources = res, .resource_count = 1 },
+    };
+    ipso_registry_t reg = { .instances = insts, .instance_count = 2 };
+    ms.registry = &reg;
+
+    microswim_update_t* ups[MAXIMUM_MEMBERS_IN_AN_UPDATE] = { 0 };
+    size_t n = microswim_updates_retrieve(&ms, ups);
+
+    microswim_message_t msg = { 0 };
+    microswim_message_construct(&ms, &msg, PING_MESSAGE, ups, n);
+
+    TEST_ASSERT_EQUAL_UINT(2, msg.ipso_object_count);
+    TEST_ASSERT_EQUAL_UINT16(3303, msg.ipso_objects[0].oid);
+    TEST_ASSERT_EQUAL_UINT16(0, msg.ipso_objects[0].iid);
+    TEST_ASSERT_EQUAL_UINT16(3311, msg.ipso_objects[1].oid);
+    TEST_ASSERT_EQUAL_UINT16(0, msg.ipso_objects[1].iid);
+
+    test_helper_teardown_ms(&ms);
+}
+
+/* Construct message with no registry yields zero IPSO objects */
+void test_message_construct_no_ipso_when_no_registry(void) {
+    microswim_t ms = { 0 };
+    test_helper_init_ms(&ms, "SELF-MSG-08", 15070);
+
+    ms.registry = NULL;
+
+    microswim_update_t* ups[MAXIMUM_MEMBERS_IN_AN_UPDATE] = { 0 };
+    size_t n = microswim_updates_retrieve(&ms, ups);
+
+    microswim_message_t msg = { 0 };
+    microswim_message_construct(&ms, &msg, PING_MESSAGE, ups, n);
+
+    TEST_ASSERT_EQUAL_UINT(0, msg.ipso_object_count);
+
+    test_helper_teardown_ms(&ms);
 }

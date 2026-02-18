@@ -65,6 +65,19 @@ static void microswim_decode_uri_to_sockaddr(struct sockaddr_in* addr, cbor_item
     }
 }
 
+static void microswim_decode_ipso_objects(ipso_object_id_t* objects, size_t* count, cbor_item_t* array) {
+    size_t n = cbor_array_size(array);
+    if (n > MAXIMUM_IPSO_OBJECTS) {
+        n = MAXIMUM_IPSO_OBJECTS;
+    }
+    for (size_t i = 0; i < n; i++) {
+        cbor_item_t* pair = cbor_array_handle(array)[i];
+        objects[i].oid = cbor_get_uint16(cbor_array_handle(pair)[0]);
+        objects[i].iid = cbor_get_uint16(cbor_array_handle(pair)[1]);
+    }
+    *count = n;
+}
+
 static void microswim_decode_updates(microswim_message_t* message, cbor_item_t* updates) {
     size_t update_count = cbor_array_size(updates);
     message->update_count = (int)update_count;
@@ -87,6 +100,8 @@ static void microswim_decode_updates(microswim_message_t* message, cbor_item_t* 
             } else if (strncmp(array_key, "incarnation", array_key_length) == 0) {
                 size_t incarnation = cbor_get_uint8(array_pair.value);
                 message->mu[j].incarnation = (int)incarnation;
+            } else if (strncmp(array_key, "objects", array_key_length) == 0) {
+                microswim_decode_ipso_objects(message->mu[j].ipso_objects, &message->mu[j].ipso_object_count, array_pair.value);
             }
         }
     }
@@ -108,6 +123,8 @@ static void microswim_decode_pair(microswim_message_t* message, const char* key,
     } else if (strncmp(key, "incarnation", key_length) == 0) {
         size_t value = cbor_get_uint8(pair.value);
         message->incarnation = value;
+    } else if (strncmp(key, "objects", key_length) == 0) {
+        microswim_decode_ipso_objects(message->ipso_objects, &message->ipso_object_count, pair.value);
     } else if (strncmp(key, "updates", key_length) == 0) {
         microswim_decode_updates(message, pair.value);
     }

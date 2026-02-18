@@ -146,4 +146,75 @@ void test_cbor_roundtrip_empty_updates(void) {
     TEST_ASSERT_EQUAL_UINT(0, decoded.update_count);
 }
 
+/* CBOR round-trip with IPSO objects on origin and updates */
+void test_cbor_roundtrip_with_ipso_objects(void) {
+    microswim_message_t orig = { 0 };
+    orig.type = PING_MESSAGE;
+    strncpy((char*)orig.uuid, "CBOR-IPSO-01", UUID_SIZE);
+    orig.addr.sin_family = AF_INET;
+    orig.addr.sin_port = htons(7100);
+    inet_pton(AF_INET, "127.0.0.1", &orig.addr.sin_addr);
+    orig.status = ALIVE;
+    orig.incarnation = 1;
+
+    /* Origin IPSO objects */
+    orig.ipso_object_count = 2;
+    orig.ipso_objects[0] = (ipso_object_id_t){ .oid = 3303, .iid = 0 };
+    orig.ipso_objects[1] = (ipso_object_id_t){ .oid = 3311, .iid = 1 };
+
+    /* One update member with IPSO objects */
+    strncpy((char*)orig.mu[0].uuid, "UPDATE-IPSO-01", UUID_SIZE);
+    orig.mu[0].addr.sin_family = AF_INET;
+    orig.mu[0].addr.sin_port = htons(7101);
+    inet_pton(AF_INET, "127.0.0.1", &orig.mu[0].addr.sin_addr);
+    orig.mu[0].status = ALIVE;
+    orig.mu[0].incarnation = 0;
+    orig.mu[0].ipso_object_count = 1;
+    orig.mu[0].ipso_objects[0] = (ipso_object_id_t){ .oid = 3304, .iid = 0 };
+    orig.update_count = 1;
+
+    unsigned char buffer[BUFFER_SIZE] = { 0 };
+    size_t len = microswim_encode_message(&orig, buffer, BUFFER_SIZE);
+    TEST_ASSERT_TRUE(len > 0);
+
+    microswim_message_t decoded = { 0 };
+    microswim_decode_message(&decoded, (const char*)buffer, (ssize_t)len);
+
+    /* Verify origin IPSO */
+    TEST_ASSERT_EQUAL_UINT(2, decoded.ipso_object_count);
+    TEST_ASSERT_EQUAL_UINT16(3303, decoded.ipso_objects[0].oid);
+    TEST_ASSERT_EQUAL_UINT16(0, decoded.ipso_objects[0].iid);
+    TEST_ASSERT_EQUAL_UINT16(3311, decoded.ipso_objects[1].oid);
+    TEST_ASSERT_EQUAL_UINT16(1, decoded.ipso_objects[1].iid);
+
+    /* Verify update member IPSO */
+    TEST_ASSERT_EQUAL_UINT(1, decoded.update_count);
+    TEST_ASSERT_EQUAL_UINT(1, decoded.mu[0].ipso_object_count);
+    TEST_ASSERT_EQUAL_UINT16(3304, decoded.mu[0].ipso_objects[0].oid);
+    TEST_ASSERT_EQUAL_UINT16(0, decoded.mu[0].ipso_objects[0].iid);
+}
+
+/* CBOR round-trip with empty IPSO objects */
+void test_cbor_roundtrip_empty_ipso(void) {
+    microswim_message_t orig = { 0 };
+    orig.type = ACK_MESSAGE;
+    strncpy((char*)orig.uuid, "CBOR-IPSO-02", UUID_SIZE);
+    orig.addr.sin_family = AF_INET;
+    orig.addr.sin_port = htons(7110);
+    inet_pton(AF_INET, "127.0.0.1", &orig.addr.sin_addr);
+    orig.status = ALIVE;
+    orig.incarnation = 0;
+    orig.ipso_object_count = 0;
+    orig.update_count = 0;
+
+    unsigned char buffer[BUFFER_SIZE] = { 0 };
+    size_t len = microswim_encode_message(&orig, buffer, BUFFER_SIZE);
+    TEST_ASSERT_TRUE(len > 0);
+
+    microswim_message_t decoded = { 0 };
+    microswim_decode_message(&decoded, (const char*)buffer, (ssize_t)len);
+
+    TEST_ASSERT_EQUAL_UINT(0, decoded.ipso_object_count);
+}
+
 #endif /* MICROSWIM_CBOR */

@@ -73,6 +73,8 @@ microswim_member_t* microswim_member_add(microswim_t* ms, microswim_member_t mem
     slot->incarnation = member.incarnation;
     slot->status = member.status;
     slot->timeout = (microswim_milliseconds() + (uint64_t)(SUSPECT_TIMEOUT * 1000));
+    slot->ipso_object_count = member.ipso_object_count;
+    memcpy(slot->ipso_objects, member.ipso_objects, member.ipso_object_count * sizeof(ipso_object_id_t));
 
     return slot;
 }
@@ -160,6 +162,12 @@ void microswim_member_update(microswim_t* ms, microswim_member_t* ex, microswim_
         }
 
         return;
+    }
+
+    // Copy IPSO objects once, when the member is first discovered.
+    if (ex->ipso_object_count == 0 && nw->ipso_object_count > 0) {
+        ex->ipso_object_count = nw->ipso_object_count;
+        memcpy(ex->ipso_objects, nw->ipso_objects, nw->ipso_object_count * sizeof(ipso_object_id_t));
     }
 
     if (nw->status == ALIVE) {
@@ -372,6 +380,8 @@ microswim_member_t* microswim_member_confirmed_add(microswim_t* ms, microswim_me
     slot->incarnation = member.incarnation;
     slot->status = member.status;
     slot->timeout = 0;
+    slot->ipso_object_count = member.ipso_object_count;
+    memcpy(slot->ipso_objects, member.ipso_objects, member.ipso_object_count * sizeof(ipso_object_id_t));
 
     return slot;
 }
