@@ -71,7 +71,7 @@ microswim_member_t* microswim_member_add(microswim_t* ms, microswim_member_t mem
     strncpy((char*)slot->uuid, (char*)member.uuid, UUID_SIZE);
     slot->addr = member.addr;
     slot->incarnation = member.incarnation;
-    slot->status = member.incarnation;
+    slot->status = member.status;
     slot->timeout = (microswim_milliseconds() + (uint64_t)(SUSPECT_TIMEOUT * 1000));
 
     return slot;
