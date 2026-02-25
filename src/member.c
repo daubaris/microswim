@@ -107,6 +107,14 @@ microswim_member_t* microswim_member_find(microswim_t* ms, microswim_member_t* m
     return NULL;
 }
 
+microswim_member_t* microswim_member_find_by_uuid(microswim_t* ms, const char* uuid) {
+    for (size_t i = 0; i < ms->member_count; i++) {
+        if (strncmp((char*)ms->members[i].uuid, uuid, UUID_SIZE) == 0)
+            return &ms->members[i];
+    }
+    return NULL;
+}
+
 /**
  * @brief Searches for a member from the central confirmed member array.
  *
@@ -467,4 +475,12 @@ void microswim_members_check_suspects(microswim_t* ms) {
             }
         }
     }
+}
+
+bool microswim_member_has_oid(const microswim_member_t* m, ipso_oid_t oid) {
+    for (size_t j = 0; j < m->ipso_object_count; j++) {
+        if (m->ipso_objects[j].oid == oid)
+            return true;
+    }
+    return false;
 }

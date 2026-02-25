@@ -12,6 +12,7 @@ size_t microswim_member_address_compare(microswim_member_t* a, microswim_member_
 microswim_member_t* microswim_member_retrieve(microswim_t* ms);
 microswim_member_t* microswim_member_add(microswim_t* ms, microswim_member_t member);
 microswim_member_t* microswim_member_find(microswim_t* ms, microswim_member_t* member);
+microswim_member_t* microswim_member_find_by_uuid(microswim_t* ms, const char* uuid);
 microswim_member_t* microswim_member_remove(microswim_t* ms, microswim_member_t* member);
 microswim_member_t* microswim_member_move(microswim_t* ms, microswim_member_t* member);
 
@@ -29,6 +30,8 @@ microswim_member_t* microswim_member_confirmed_find(microswim_t* ms, microswim_m
 microswim_member_t* microswim_member_confirmed_add(microswim_t* ms, microswim_member_t member);
 
 size_t microswim_get_ping_req_candidates(microswim_t* ms, size_t members[FAILURE_DETECTION_GROUP]);
+
+bool microswim_member_has_oid(const microswim_member_t* m, ipso_oid_t oid);
 
 #ifdef __cplusplus
 }
