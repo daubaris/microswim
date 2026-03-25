@@ -1,2 +1,3 @@
 add_subdirectory(convergence)
+add_subdirectory(failure_detection)
 add_subdirectory(messages)
