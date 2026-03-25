@@ -103,7 +103,7 @@ def gossip_message_count(files):
 
     combined = pd.concat(dfs, ignore_index=True)
     combined = combined.drop(columns=["Port"])
-    combined["Members in an update"] = combined["Members in an update"] + 1
+    combined["Members in an update"] = combined["Members in an update"]
 
     groups = combined.groupby(
         ["Gossip fanout", "Members", "Members in an update", "Iteration"]
