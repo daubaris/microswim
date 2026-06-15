@@ -15,9 +15,16 @@ static int jsoneq(const char* json, jsmntok_t* tok, const char* s) {
 }
 
 microswim_message_type_t microswim_decode_message_type(char* buffer, ssize_t len) {
+    ssize_t buffer_length = 0;
+    if (len > BUFFER_SIZE) {
+        buffer_length = BUFFER_SIZE;
+    } else {
+        buffer_length = len;
+    }
+
     int r;
     jsmn_parser p;
-    jsmntok_t t[len];
+    jsmntok_t t[buffer_length];
 
     jsmn_init(&p);
     r = jsmn_parse(&p, buffer, strlen(buffer), t, sizeof(t) / sizeof(t[0]));
@@ -118,9 +125,16 @@ static void microswim_decode_uri_to_sockaddr(struct sockaddr_in* addr, const cha
 #endif
 
 void microswim_decode_message(microswim_message_t* message, const char* buffer, ssize_t len) {
+    ssize_t buffer_length = 0;
+    if (len > BUFFER_SIZE) {
+        buffer_length = BUFFER_SIZE;
+    } else {
+        buffer_length = len;
+    }
+
     int r;
     jsmn_parser p;
-    jsmntok_t t[len];
+    jsmntok_t t[buffer_length];
 
     jsmn_init(&p);
     r = jsmn_parse(&p, buffer, strlen(buffer), t, sizeof(t) / sizeof(t[0]));

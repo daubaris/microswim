@@ -259,22 +259,25 @@ void microswim_message_handle(
 
     switch (type) {
         case PING_MESSAGE:
-            microswim_decode_message(&message, (const char*)buffer, len);
-            microswim_message_print(&message);
-            microswim_message_extract_members(ms, &message);
-            microswim_ping_message_handle(ms, &message);
+            if (microswim_decode_message(&message, (const char*)buffer, len) == DECODING_SUCCESSFUL) {
+                microswim_message_print(&message);
+                microswim_message_extract_members(ms, &message);
+                microswim_ping_message_handle(ms, &message);
+            }
             break;
         case PING_REQ_MESSAGE:
-            microswim_decode_message(&message, (const char*)buffer, len);
-            microswim_message_print(&message);
-            microswim_message_extract_members(ms, &message);
-            microswim_ping_req_message_handle(ms, &message);
+            if (microswim_decode_message(&message, (const char*)buffer, len) == DECODING_SUCCESSFUL) {
+                microswim_message_print(&message);
+                microswim_message_extract_members(ms, &message);
+                microswim_ping_req_message_handle(ms, &message);
+            }
             break;
         case ACK_MESSAGE:
-            microswim_decode_message(&message, (const char*)buffer, len);
-            microswim_message_print(&message);
-            microswim_message_extract_members(ms, &message);
-            microswim_ack_message_handle(ms, &message);
+            if (microswim_decode_message(&message, (const char*)buffer, len) == DECODING_SUCCESSFUL) {
+                microswim_message_print(&message);
+                microswim_message_extract_members(ms, &message);
+                microswim_ack_message_handle(ms, &message);
+            }
             break;
         case ALIVE_MESSAGE:
         case SUSPECT_MESSAGE:

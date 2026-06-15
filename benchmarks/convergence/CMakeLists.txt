@@ -33,4 +33,4 @@ if(CUSTOM_CONFIGURATION)
   target_include_directories(convergence PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 endif()
 
-target_link_libraries(convergence PUBLIC cbor hiredis uuid)
+target_link_libraries(convergence PUBLIC cbor hiredis)
