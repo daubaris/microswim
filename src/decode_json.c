@@ -65,6 +65,10 @@ static void microswim_decode_uri_to_sockaddr(sock_udp_ep_t* addr, char* buffer, 
     char ip[64];
     char port_str[8];
 
+    if (ip_len >= sizeof(ip) || port_len >= sizeof(port_str)) {
+        return;
+    }
+
     memcpy(ip, buffer, ip_len);
     ip[ip_len] = '\0';
 
@@ -100,6 +104,10 @@ static void microswim_decode_uri_to_sockaddr(struct sockaddr_in* addr, const cha
 
     char ip[64];
     char port_str[8];
+
+    if (ip_len >= sizeof(ip) || port_len >= sizeof(port_str)) {
+        return;
+    }
 
     memcpy(ip, buffer, ip_len);
     ip[ip_len] = '\0';

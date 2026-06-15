@@ -16,7 +16,5 @@
 #define MAXIMUM_IPSO_OBJECTS 8
 
 #define BUFFER_SIZE 512
-#define CBOR_MAX_KEY_SIZE 16
-#define MAXIMUM_URI_LENGTH 64
 
 #endif

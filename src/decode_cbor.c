@@ -55,32 +55,41 @@ static microswim_decoder_status_t microswim_decode_uri_to_sockaddr(struct sockad
     }
 
     char buffer[length];
-    memset(buffer, 0, sizeof(buffer));
-    memcpy(buffer, cbor_string_handle(item), sizeof(buffer));
-    char* colon = strchr(buffer, ':');
+    memset(buffer, 0, length);
+    memcpy(buffer, cbor_string_handle(item), length);
 
+    const char* colon = memchr(buffer, ':', length);
     if (!colon) {
         return DECODING_ERROR_URI_INCOMPLETE;
     }
 
-    int port_length = (buffer + length) - (colon);
-    char p[port_length - 1];
-    memset(p, 0, sizeof(p));
-    memcpy(p, colon + 1, sizeof(p));
-    buffer[length - port_length] = '\0';
-    p[port_length] = '\0';
-    int port = strtol(p, NULL, 10);
+    size_t ip_len = colon - buffer;
+    size_t port_len = length - ip_len - 1;
 
-    if (!port) {
-        return DECODING_ERROR_PORT_MISSING;
-    }
+    char ip[64];
+    char port_str[8];
 
-    if (inet_pton(AF_INET, buffer, &(addr->sin_addr)) != 1) {
+    if (ip_len >= sizeof(ip) || port_len >= sizeof(port_str)) {
         return DECODING_ERROR_URI_INVALID;
     }
 
-    addr->sin_port = htons(port);
-    addr->sin_family = AF_INET;
+    memcpy(ip, buffer, ip_len);
+    ip[ip_len] = '\0';
+
+    memcpy(port_str, colon + 1, port_len);
+    port_str[port_len] = '\0';
+
+    char* end;
+    long port = strtol(port_str, &end, 10);
+
+    if (*end != '\0' || port <= 0 || port > 65535) {
+        return DECODING_ERROR_URI_INVALID;
+    }
+
+    if (inet_pton(AF_INET, ip, &(addr->sin_addr)) != 1) {
+        MICROSWIM_LOG_ERROR("Invalid IP address: %s\n", ip);
+        return DECODING_ERROR_URI_INVALID;
+    }
 
     return DECODING_SUCCESSFUL;
 }

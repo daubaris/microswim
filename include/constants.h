@@ -7,4 +7,7 @@
 #define SIN_PORT 0x02
 #define SIN_ADDR 0x04
 
+#define CBOR_MAX_KEY_SIZE 16
+#define MAXIMUM_URI_LENGTH 64
+
 #endif
