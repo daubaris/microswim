@@ -328,10 +328,11 @@ void microswim_member_mark_confirmed(microswim_t* ms, microswim_member_t* member
         microswim_ping_remove(ms, ping);
     }
 
+    microswim_member_t snapshot = *member;
     microswim_member_move(ms, member);
 
     microswim_message_t message = { 0 };
-    microswim_status_message_construct(ms, &message, CONFIRM_MESSAGE, member);
+    microswim_status_message_construct(ms, &message, CONFIRM_MESSAGE, &snapshot);
 
     microswim_member_t* recipient = microswim_member_retrieve(ms);
     if (recipient != NULL) {
