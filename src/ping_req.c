@@ -75,7 +75,7 @@ void microswim_ping_req_add(microswim_t* ms, microswim_member_t* source, microsw
     }
 
     if (source->uuid[0] != '\0' && target->uuid[0] != '\0') {
-        if (ms->ping_req_count < MAXIMUM_PINGS) {
+        if (ms->ping_req_count < MAXIMUM_PING_REQS) {
             ms->ping_reqs[ms->ping_req_count].source = source;
             ms->ping_reqs[ms->ping_req_count].target = target;
             ms->ping_reqs[ms->ping_req_count].timeout =

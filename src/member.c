@@ -252,25 +252,30 @@ microswim_member_t* microswim_member_move(microswim_t* ms, microswim_member_t* m
         }
     }
 
-    if (index >= 0) {
-        microswim_ping_t* ping = microswim_ping_find(ms, member);
-        if (ping != NULL) {
-            microswim_ping_remove(ms, ping);
-        }
-
-        ms->confirmed[ms->confirmed_count] = ms->members[index];
-
-        microswim_update_t* update = microswim_update_find(ms, &ms->members[index]);
-        if (update != NULL) {
-            update->member = &ms->confirmed[ms->confirmed_count];
-        }
-
-        microswim_members_shift(ms, index);
-
-        return &ms->confirmed[ms->confirmed_count++];
+    if (index < 0) {
+        return NULL;
     }
 
-    return NULL;
+    microswim_ping_t* ping = microswim_ping_find(ms, member);
+    if (ping != NULL) {
+        microswim_ping_remove(ms, ping);
+    }
+
+    if (ms->confirmed_count < MAXIMUM_MEMBERS) {
+        ms->confirmed[ms->confirmed_count] = ms->members[index];
+    } else {
+        MICROSWIM_LOG_ERROR("Confirmed list bounds exceeded.");
+        return NULL;
+    }
+
+    microswim_update_t* update = microswim_update_find(ms, &ms->members[index]);
+    if (update != NULL) {
+        update->member = &ms->confirmed[ms->confirmed_count];
+    }
+
+    microswim_members_shift(ms, index);
+
+    return &ms->confirmed[ms->confirmed_count++];
 }
 
 /**

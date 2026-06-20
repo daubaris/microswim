@@ -118,8 +118,8 @@ typedef struct {
     microswim_member_t members[MAXIMUM_MEMBERS];
     microswim_member_t confirmed[MAXIMUM_MEMBERS];
     microswim_update_t updates[MAXIMUM_UPDATES];
-    microswim_ping_t pings[MAXIMUM_MEMBERS];
-    microswim_ping_req_t ping_reqs[MAXIMUM_MEMBERS];
+    microswim_ping_t pings[MAXIMUM_PINGS];
+    microswim_ping_req_t ping_reqs[MAXIMUM_PING_REQS];
     microswim_event_t events[MAXIMUM_EVENTS];
     size_t indices[MAXIMUM_MEMBERS];
     size_t member_count;
