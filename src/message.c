@@ -280,8 +280,31 @@ void microswim_message_handle(
             }
             break;
         case ALIVE_MESSAGE:
+            if (microswim_decode_message(&message, (const char*)buffer, len) == DECODING_SUCCESSFUL && message.update_count >= 1) {
+                microswim_message_print(&message);
+                microswim_member_t* member = microswim_member_find(ms, &message.mu[0]);
+                if (member != NULL) {
+                    microswim_member_mark_alive(ms, member);
+                }
+            }
+            break;
         case SUSPECT_MESSAGE:
+            if (microswim_decode_message(&message, (const char*)buffer, len) == DECODING_SUCCESSFUL && message.update_count >= 1) {
+                microswim_message_print(&message);
+                microswim_member_t* member = microswim_member_find(ms, &message.mu[0]);
+                if (member != NULL) {
+                    microswim_member_mark_suspect(ms, member);
+                }
+            }
+            break;
         case CONFIRM_MESSAGE:
+            if (microswim_decode_message(&message, (const char*)buffer, len) == DECODING_SUCCESSFUL && message.update_count >= 1) {
+                microswim_message_print(&message);
+                microswim_member_t* member = microswim_member_find(ms, &message.mu[0]);
+                if (member != NULL) {
+                    microswim_member_mark_confirmed(ms, member);
+                }
+            }
             break;
         case EVENT_MESSAGE:
             event_handler(ms, buffer, len);
