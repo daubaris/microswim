@@ -5,6 +5,20 @@
 #include "microswim_log.h"
 #include "utils.h"
 
+// Encodes an unsigned value using the smallest CBOR integer width that fits, so
+// small values stay compact on the wire while large ones are not truncated.
+static cbor_item_t* microswim_encode_uint(size_t value) {
+    uint64_t v = (uint64_t)value;
+    if (v <= UINT8_MAX) {
+        return cbor_build_uint8((uint8_t)v);
+    } else if (v <= UINT16_MAX) {
+        return cbor_build_uint16((uint16_t)v);
+    } else if (v <= UINT32_MAX) {
+        return cbor_build_uint32((uint32_t)v);
+    }
+    return cbor_build_uint64(v);
+}
+
 static cbor_item_t* microswim_encode_ipso_objects(const ipso_object_id_t* objects, size_t count) {
     cbor_item_t* array = cbor_new_definite_array(count);
     for (size_t i = 0; i < count; i++) {
@@ -40,7 +54,7 @@ size_t microswim_encode_message(microswim_message_t* message, unsigned char* buf
     success &= cbor_map_add(
         origin_map,
         (struct cbor_pair){ .key = cbor_move(cbor_build_string("incarnation")),
-                            .value = cbor_move(cbor_build_uint8((uint8_t)message->incarnation)) });
+                            .value = cbor_move(microswim_encode_uint(message->incarnation)) });
     success &= cbor_map_add(
         origin_map,
         (struct cbor_pair){ .key = cbor_move(cbor_build_string("objects")),
@@ -71,7 +85,7 @@ size_t microswim_encode_message(microswim_message_t* message, unsigned char* buf
         success &= cbor_map_add(
             update_map,
             (struct cbor_pair){ .key = cbor_move(cbor_build_string("incarnation")),
-                                .value = cbor_move(cbor_build_uint8((uint8_t)message->mu[i].incarnation)) });
+                                .value = cbor_move(microswim_encode_uint(message->mu[i].incarnation)) });
         success &= cbor_map_add(
             update_map,
             (struct cbor_pair){ .key = cbor_move(cbor_build_string("objects")),

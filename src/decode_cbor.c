@@ -140,8 +140,7 @@ static microswim_decoder_status_t microswim_decode_updates(microswim_message_t* 
                 size_t status = cbor_get_uint8(array_pair.value);
                 message->mu[j].status = (microswim_member_status_t)status;
             } else if (strncmp(array_key, "incarnation", array_key_length) == 0) {
-                size_t incarnation = cbor_get_uint8(array_pair.value);
-                message->mu[j].incarnation = (int)incarnation;
+                message->mu[j].incarnation = (size_t)cbor_get_int(array_pair.value);
             } else if (strncmp(array_key, "objects", array_key_length) == 0) {
                 microswim_decode_ipso_objects(
                     message->mu[j].ipso_objects, &message->mu[j].ipso_object_count, array_pair.value);
@@ -170,8 +169,7 @@ static microswim_decoder_status_t
         size_t value = cbor_get_uint8(pair.value);
         message->status = (microswim_member_status_t)value;
     } else if (strncmp(key, "incarnation", key_length) == 0) {
-        size_t value = cbor_get_uint8(pair.value);
-        message->incarnation = value;
+        message->incarnation = (size_t)cbor_get_int(pair.value);
     } else if (strncmp(key, "objects", key_length) == 0) {
         microswim_decode_ipso_objects(message->ipso_objects, &message->ipso_object_count, pair.value);
     } else if (strncmp(key, "updates", key_length) == 0) {

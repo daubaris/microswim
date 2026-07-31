@@ -121,6 +121,7 @@ void test_ipso_write_default_write(void);
 /* test_encode_decode_cbor.c (CBOR only) */
 #ifdef MICROSWIM_CBOR
 void test_cbor_roundtrip_ping(void);
+void test_cbor_roundtrip_large_incarnation(void);
 void test_cbor_roundtrip_ack_with_updates(void);
 void test_cbor_roundtrip_suspect(void);
 void test_cbor_malformed_buffer(void);
@@ -258,6 +259,7 @@ int main(void) {
     /* CBOR encode/decode */
 #ifdef MICROSWIM_CBOR
     RUN_TEST(test_cbor_roundtrip_ping);
+    RUN_TEST(test_cbor_roundtrip_large_incarnation);
     RUN_TEST(test_cbor_roundtrip_ack_with_updates);
     RUN_TEST(test_cbor_roundtrip_suspect);
     RUN_TEST(test_cbor_malformed_buffer);

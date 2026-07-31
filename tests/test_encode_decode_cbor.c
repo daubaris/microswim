@@ -37,6 +37,35 @@ void test_cbor_roundtrip_ping(void) {
     TEST_ASSERT_EQUAL_UINT(0, decoded.update_count);
 }
 
+/* Incarnations > 255 must survive round-trip without 8-bit truncation */
+void test_cbor_roundtrip_large_incarnation(void) {
+    microswim_message_t orig = { 0 };
+    orig.type = ACK_MESSAGE;
+    strncpy((char*)orig.uuid, "CBOR-INC-UUID", UUID_SIZE);
+    orig.addr.sin_family = AF_INET;
+    orig.addr.sin_port = htons(7100);
+    inet_pton(AF_INET, "127.0.0.1", &orig.addr.sin_addr);
+    orig.status = SUSPECT;
+    orig.incarnation = 70000; /* needs uint32 */
+    orig.update_count = 1;
+    strncpy((char*)orig.mu[0].uuid, "CBOR-INC-UPD", UUID_SIZE);
+    orig.mu[0].addr.sin_family = AF_INET;
+    orig.mu[0].addr.sin_port = htons(7101);
+    inet_pton(AF_INET, "127.0.0.1", &orig.mu[0].addr.sin_addr);
+    orig.mu[0].status = ALIVE;
+    orig.mu[0].incarnation = 300; /* needs uint16 */
+
+    unsigned char buffer[BUFFER_SIZE] = { 0 };
+    size_t len = microswim_encode_message(&orig, buffer, BUFFER_SIZE);
+    TEST_ASSERT_TRUE(len > 0);
+
+    microswim_message_t decoded = { 0 };
+    microswim_decode_message(&decoded, (const char*)buffer, (ssize_t)len);
+
+    TEST_ASSERT_EQUAL_UINT(70000, decoded.incarnation);
+    TEST_ASSERT_EQUAL_UINT(300, decoded.mu[0].incarnation);
+}
+
 /* Encode/decode ACK with updates */
 void test_cbor_roundtrip_ack_with_updates(void) {
     microswim_message_t orig = { 0 };
