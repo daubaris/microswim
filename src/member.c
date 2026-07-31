@@ -256,17 +256,17 @@ microswim_member_t* microswim_member_move(microswim_t* ms, microswim_member_t* m
         return NULL;
     }
 
+    if (ms->confirmed_count >= MAXIMUM_MEMBERS) {
+        MICROSWIM_LOG_ERROR("Confirmed list bounds exceeded.");
+        return NULL;
+    }
+
     microswim_ping_t* ping = microswim_ping_find(ms, member);
     if (ping != NULL) {
         microswim_ping_remove(ms, ping);
     }
 
-    if (ms->confirmed_count < MAXIMUM_MEMBERS) {
-        ms->confirmed[ms->confirmed_count] = ms->members[index];
-    } else {
-        MICROSWIM_LOG_ERROR("Confirmed list bounds exceeded.");
-        return NULL;
-    }
+    ms->confirmed[ms->confirmed_count] = ms->members[index];
 
     microswim_update_t* update = microswim_update_find(ms, &ms->members[index]);
     if (update != NULL) {
