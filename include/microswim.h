@@ -135,7 +135,7 @@ typedef struct {
 void microswim_socket_setup(microswim_t* ms, char* addr, int port);
 
 void microswim_index_add(microswim_t* ms);
-void microswim_index_remove(microswim_t* ms);
+void microswim_index_remove(microswim_t* ms, size_t slot);
 void microswim_indices_shuffle(microswim_t* ms);
 size_t* microswim_indices_shift(microswim_t* ms, size_t index);
 

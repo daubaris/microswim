@@ -8,7 +8,7 @@ void tearDown(void) {
 /* test_microswim.c */
 void test_index_add_single(void);
 void test_index_add_multiple(void);
-void test_index_remove_removes_highest(void);
+void test_index_remove_by_slot(void);
 void test_indices_shift(void);
 void test_indices_shuffle_preserves_set(void);
 void test_index_remove_empty(void);
@@ -135,7 +135,7 @@ int main(void) {
     /* Index management */
     RUN_TEST(test_index_add_single);
     RUN_TEST(test_index_add_multiple);
-    RUN_TEST(test_index_remove_removes_highest);
+    RUN_TEST(test_index_remove_by_slot);
     RUN_TEST(test_indices_shift);
     RUN_TEST(test_indices_shuffle_preserves_set);
     RUN_TEST(test_index_remove_empty);

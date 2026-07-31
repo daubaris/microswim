@@ -30,22 +30,29 @@ void test_index_add_multiple(void) {
     }
 }
 
-/* Highest-value index removed */
-void test_index_remove_removes_highest(void) {
+/* Removing a slot drops its entry and renumbers higher slots */
+void test_index_remove_by_slot(void) {
     microswim_t ms = { 0 };
-    ms.member_count = 3;
+    /* 3 members: indices are a permutation of {0,1,2} */
     ms.indices[0] = 1;
     ms.indices[1] = 2;
     ms.indices[2] = 0;
 
-    /* member_count is used as "count+1" in index_remove; set it to size-1 */
-    ms.member_count = 2; /* index_remove reads member_count+1 entries */
-    microswim_index_remove(&ms);
+    /* Simulate removal of members[] slot 1: members_shift has already dropped
+       it, so member_count is now 2 and index_remove is called with slot 1. */
+    ms.member_count = 2;
+    microswim_index_remove(&ms, 1);
 
-    /* Index with value 2 (the highest) should be gone */
+    /* The entry that referenced slot 1 is gone; the surviving entries are a
+       permutation of {0,1}: old value 2 (a slot above 1) becomes 1, and old
+       value 0 stays 0. */
+    int seen[2] = { 0 };
     for (size_t i = 0; i < 2; i++) {
-        TEST_ASSERT_TRUE(ms.indices[i] <= 1);
+        TEST_ASSERT_TRUE(ms.indices[i] < 2);
+        seen[ms.indices[i]]++;
     }
+    TEST_ASSERT_EQUAL_INT(1, seen[0]);
+    TEST_ASSERT_EQUAL_INT(1, seen[1]);
 }
 
 /* Right-shift inserts at position */
@@ -85,12 +92,13 @@ void test_indices_shuffle_preserves_set(void) {
     }
 }
 
-/* No crash on empty */
+/* No crash when the array is empty after removal */
 void test_index_remove_empty(void) {
     microswim_t ms = { 0 };
     ms.member_count = 0;
-    /* (member_count + 1) == 1, so the guard `(ms->member_count + 1) == 0`
-       does not trigger; but the loop body has 0 iterations, so nothing breaks. */
-    microswim_index_remove(&ms);
+    /* Removing from an empty rotation must not crash and must normalize the
+       round-robin cursor. */
+    microswim_index_remove(&ms, 0);
     TEST_ASSERT_EQUAL_UINT(0, ms.member_count);
+    TEST_ASSERT_EQUAL_UINT(0, ms.round_robin_index);
 }

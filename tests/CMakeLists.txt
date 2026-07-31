@@ -2,14 +2,17 @@ cmake_minimum_required(VERSION 3.20)
 
 set(CMAKE_C_STANDARD 11)
 
-set(UNITY_INCLUDE_DOUBLE
-    ON
-    CACHE BOOL "" FORCE)
-
 include(FetchContent)
 FetchContent_Declare(unity
                      GIT_REPOSITORY https://github.com/ThrowTheSwitch/Unity.git)
 FetchContent_MakeAvailable(unity)
+
+# Unity's CMake build does not honor the UNITY_INCLUDE_DOUBLE option (only its
+# meson build does), so enable double-precision asserts via a compile definition
+# on the unity target. PUBLIC propagates it to the test target as well, so the
+# TEST_ASSERT_*_DOUBLE macros expand to real assertions instead of the
+# "Unity Double Precision Disabled" stub.
+target_compile_definitions(unity PUBLIC UNITY_INCLUDE_DOUBLE)
 
 if(CUSTOM_CONFIGURATION)
   add_compile_definitions(CUSTOM_CONFIGURATION=1)

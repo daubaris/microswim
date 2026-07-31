@@ -26,6 +26,10 @@ microswim_member_t* microswim_member_retrieve(microswim_t* ms) {
         return NULL;
     }
 
+    if (ms->round_robin_index >= ms->member_count) {
+        ms->round_robin_index = 0;
+    }
+
     size_t original_index = ms->round_robin_index;
 
     while (1) {
@@ -232,7 +236,6 @@ void microswim_member_update(microswim_t* ms, microswim_member_t* ex, microswim_
             }
 
             microswim_member_mark_confirmed(ms, ex);
-            microswim_index_remove(ms);
         }
     }
 }
@@ -274,6 +277,7 @@ microswim_member_t* microswim_member_move(microswim_t* ms, microswim_member_t* m
     }
 
     microswim_members_shift(ms, index);
+    microswim_index_remove(ms, (size_t)index);
 
     return &ms->confirmed[ms->confirmed_count++];
 }
@@ -476,7 +480,6 @@ void microswim_members_check_suspects(microswim_t* ms) {
                 // BUG: What should happen if confirmed is found?
                 if (!confirmed) {
                     microswim_member_mark_confirmed(ms, &ms->members[i]);
-                    microswim_index_remove(ms);
                 }
             }
         }

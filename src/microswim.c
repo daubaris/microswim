@@ -83,21 +83,38 @@ void microswim_socket_setup(microswim_t* ms, char* addr, int port) {
 #endif
 }
 
-void microswim_index_remove(microswim_t* ms) {
-    if ((ms->member_count + 1) == 0)
-        return;
+void microswim_index_remove(microswim_t* ms, size_t slot) {
+    // member_count has already been decremented for the removed slot, so the
+    // stale index array still holds (member_count + 1) entries: a permutation
+    // of [0, member_count].
+    size_t old_count = ms->member_count + 1;
 
-    // Find the index of the highest value
-    int index = 0;
-    for (size_t i = 1; i < ms->member_count + 1; i++) {
-        if (ms->indices[i] > ms->indices[index]) {
-            index = i;
+    // Drop the entry that referenced the removed slot.
+    size_t pos = old_count;
+    for (size_t i = 0; i < old_count; i++) {
+        if (ms->indices[i] == slot) {
+            pos = i;
+            break;
+        }
+    }
+    if (pos == old_count) {
+        return;
+    }
+    for (size_t i = pos; i < ms->member_count; i++) {
+        ms->indices[i] = ms->indices[i + 1];
+    }
+
+    // Slots above the removed one slid down by one in members[]; renumber the
+    // surviving references so the permutation matches the new layout.
+    for (size_t i = 0; i < ms->member_count; i++) {
+        if (ms->indices[i] > slot) {
+            ms->indices[i]--;
         }
     }
 
-    // Shift elements to remove the highest value
-    for (size_t i = index; i < ms->member_count; i++) {
-        ms->indices[i] = ms->indices[i + 1];
+    // Keep the round-robin cursor within the shrunken array.
+    if (ms->round_robin_index >= ms->member_count) {
+        ms->round_robin_index = 0;
     }
 }
 
