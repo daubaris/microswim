@@ -62,7 +62,7 @@ microswim_member_t* microswim_member_retrieve(microswim_t* ms) {
  * @return A pointer to the added member, or NULL if the member cannot be added due to the limit of the array.
  */
 microswim_member_t* microswim_member_add(microswim_t* ms, microswim_member_t member) {
-    if (ms->member_count > MAXIMUM_MEMBERS) {
+    if (ms->member_count >= MAXIMUM_MEMBERS) {
         MICROSWIM_LOG_ERROR("Cannot add more than %d members\n", MAXIMUM_MEMBERS);
         return NULL;
     }
@@ -383,7 +383,7 @@ size_t microswim_member_address_compare(microswim_member_t* a, microswim_member_
  * @return A pointer to the member added to the confirmed member array.
  */
 microswim_member_t* microswim_member_confirmed_add(microswim_t* ms, microswim_member_t member) {
-    if (ms->confirmed_count > MAXIMUM_MEMBERS) {
+    if (ms->confirmed_count >= MAXIMUM_MEMBERS) {
         MICROSWIM_LOG_ERROR("Cannot add more than %d members\n", MAXIMUM_MEMBERS);
         return NULL;
     }

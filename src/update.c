@@ -7,7 +7,7 @@
  * @brief Adds an update to the central update array, referencing the supplied member.
  */
 microswim_update_t* microswim_update_add(microswim_t* ms, microswim_member_t* member) {
-    if (ms->update_count > MAXIMUM_UPDATES) {
+    if (ms->update_count >= MAXIMUM_UPDATES) {
         MICROSWIM_LOG_ERROR("Cannot add more than %d updates\n", MAXIMUM_UPDATES);
         return NULL;
     }
