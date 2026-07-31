@@ -109,6 +109,10 @@ static void microswim_decode_ipso_objects(ipso_object_id_t* objects, size_t* cou
 
 static microswim_decoder_status_t microswim_decode_updates(microswim_message_t* message, cbor_item_t* updates) {
     size_t update_count = cbor_array_size(updates);
+    if (update_count > MAXIMUM_UPDATES) {
+        MICROSWIM_LOG_DEBUG("Update count (%zu) exceeds the maximum (%d), clamping", update_count, MAXIMUM_UPDATES);
+        update_count = MAXIMUM_UPDATES;
+    }
     message->update_count = (int)update_count;
     for (size_t j = 0; j < update_count; j++) {
         cbor_item_t* array_item = cbor_array_handle(updates)[j];

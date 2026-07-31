@@ -186,6 +186,10 @@ void microswim_decode_message(microswim_message_t* message, const char* buffer, 
             }
             // + 1 means that we hit the '[', indicating an array.
             int array_size = t[i + 1].size;
+            if (array_size > MAXIMUM_UPDATES) {
+                MICROSWIM_LOG_DEBUG("Update count (%d) exceeds the maximum (%d), clamping", array_size, MAXIMUM_UPDATES);
+                array_size = MAXIMUM_UPDATES;
+            }
             message->update_count = array_size;
 
             // + 2 means that we hit the '{', indicating an object.
