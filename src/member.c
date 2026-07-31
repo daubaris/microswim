@@ -410,29 +410,31 @@ microswim_member_t* microswim_member_confirmed_add(microswim_t* ms, microswim_me
  * @return A number of members that will be used for indirect pings.
  */
 size_t microswim_get_ping_req_candidates(microswim_t* ms, size_t members[FAILURE_DETECTION_GROUP]) {
-    size_t member_count = 0;
-    for (size_t i = 0; (i < ms->member_count - 1 && i < FAILURE_DETECTION_GROUP); i++) {
-        bool exists = false;
-        while (!exists) {
-            size_t index = rand() % (ms->member_count - 1) + 1;
-
-            for (size_t j = 0; j <= member_count; j++) {
-                if (index == members[j]) {
-                    exists = true;
-                    break;
-                }
-            }
-
-            if (!exists) {
-                members[member_count++] = index;
-                break;
-            }
-
-            exists = false;
+    size_t eligible[MAXIMUM_MEMBERS];
+    size_t eligible_count = 0;
+    for (size_t i = 0; i < ms->member_count; i++) {
+        if (strncmp((char*)ms->self.uuid, (char*)ms->members[i].uuid, UUID_SIZE) != 0) {
+            eligible[eligible_count++] = i;
         }
     }
 
-    return member_count;
+    size_t wanted = FAILURE_DETECTION_GROUP;
+    if (wanted > eligible_count) {
+        wanted = eligible_count;
+    }
+
+    for (size_t i = 0; i < wanted; i++) {
+        size_t remaining = eligible_count - i;
+        size_t pick = i + (size_t)(rand() % remaining);
+
+        size_t temp = eligible[i];
+        eligible[i] = eligible[pick];
+        eligible[pick] = temp;
+
+        members[i] = eligible[i];
+    }
+
+    return wanted;
 }
 
 /**
