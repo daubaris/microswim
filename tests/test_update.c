@@ -44,8 +44,8 @@ void test_update_add_overflow(void) {
         test_helper_seed_uuid(uuid, (int)(100 + i));
         dummies[i] = test_helper_make_member(uuid, 9100 + (int)i);
     }
-    /* ms already has some updates from init; keep adding until overflow */
-    while (ms.update_count <= MAXIMUM_UPDATES) {
+    /* ms already has some updates from init; keep adding until full */
+    while (ms.update_count < MAXIMUM_UPDATES) {
         char uuid[UUID_SIZE];
         test_helper_seed_uuid(uuid, (int)(200 + ms.update_count));
         dummies[0] = test_helper_make_member(uuid, 9200 + (int)ms.update_count);

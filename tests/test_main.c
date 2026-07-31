@@ -97,8 +97,8 @@ void test_updates_retrieve_respects_max(void);
 
 /* test_m_event.c */
 void test_event_register(void);
-void test_event_register_at_capacity(void);
-void test_event_dispatch_noop(void);
+void test_event_register_type_out_of_range(void);
+void test_event_dispatch_invokes_handler(void);
 
 /* test_ipso.c */
 void test_ipso_find_instance_success(void);
@@ -234,8 +234,8 @@ int main(void) {
 
     /* Events */
     RUN_TEST(test_event_register);
-    RUN_TEST(test_event_register_at_capacity);
-    RUN_TEST(test_event_dispatch_noop);
+    RUN_TEST(test_event_register_type_out_of_range);
+    RUN_TEST(test_event_dispatch_invokes_handler);
 
     /* IPSO */
     RUN_TEST(test_ipso_find_instance_success);

@@ -1,28 +1,31 @@
 #include "m_event.h"
-#include "constants.h"
 #include "microswim.h"
 #include "microswim_log.h"
 
 void microswim_event_register(microswim_t* ms, microswim_event_t event) {
-    (void)ms;
-
-    if (ms->event_count < MAXIMUM_EVENTS) {
-        ms->events[event.type].type = event.type;
-        ms->events[event.type].size = event.size;
-        ms->events[event.type].encoder = event.encoder;
-        ms->events[event.type].decoder = event.decoder;
-        ms->events[event.type].handler = event.handler;
-    } else {
+    if (event.type >= MAXIMUM_EVENTS) {
         MICROSWIM_LOG_WARN(
-            "Unable to add a new event: the maximum limit (%d) has been "
-            "reached. Consider increasing MAXIMUM_EVENTS to allow "
-            "additional members.",
-            MAXIMUM_EVENTS);
+            "Unable to register event: type (%d) exceeds the maximum (%d). "
+            "Event types must be in the range [0, %d).",
+            event.type, MAXIMUM_EVENTS, MAXIMUM_EVENTS);
+        return;
     }
+
+    // events[] is a sparse table indexed by the caller-defined event type; only
+    // count a type the first time it is bound so event_count stays accurate.
+    if (ms->events[event.type].handler == NULL) {
+        ms->event_count++;
+    }
+    ms->events[event.type] = event;
 }
 
-void microswim_event_dispatch(microswim_t* ms, char* event_name, void* data) {
-    (void)ms;
-    (void)event_name;
-    (void)data;
+void microswim_event_dispatch(microswim_t* ms, uint8_t type, void* data, size_t length) {
+    if (type >= MAXIMUM_EVENTS) {
+        return;
+    }
+
+    microswim_event_t* event = &ms->events[type];
+    if (event->handler != NULL) {
+        event->handler(ms, data, length);
+    }
 }

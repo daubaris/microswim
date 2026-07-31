@@ -8,7 +8,7 @@ extern "C" {
 #include "microswim.h"
 
 void microswim_event_register(microswim_t* ms, microswim_event_t event);
-void microswim_event_dispatch(microswim_t* ms, char* event_name, void* data);
+void microswim_event_dispatch(microswim_t* ms, uint8_t type, void* data, size_t length);
 
 #ifdef __cplusplus
 }
