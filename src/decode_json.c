@@ -162,7 +162,12 @@ void microswim_decode_message(microswim_message_t* message, const char* buffer, 
             i++;
         }
         if (jsoneq(buffer, &t[i], "uuid") == 0) {
-            strncpy((char*)message->uuid, buffer + t[i + 1].start, t[i + 1].end - t[i + 1].start);
+            int uuid_length = t[i + 1].end - t[i + 1].start;
+            if (uuid_length >= UUID_SIZE) {
+                uuid_length = UUID_SIZE - 1;
+            }
+            memcpy(message->uuid, buffer + t[i + 1].start, uuid_length);
+            message->uuid[uuid_length] = '\0';
             i++;
         }
         if (jsoneq(buffer, &t[i], "uri") == 0) {
@@ -209,9 +214,12 @@ void microswim_decode_message(microswim_message_t* message, const char* buffer, 
                     // if +2 is the object, it means the content will start at +3
                     jsmntok_t* inner = &t[i + j + k + 3];
                     if (jsoneq(buffer, inner, "uuid") == 0) {
-                        strncpy(
-                            (char*)message->mu[j].uuid, buffer + (inner + 1)->start,
-                            (inner + 1)->end - (inner + 1)->start);
+                        int uuid_length = (inner + 1)->end - (inner + 1)->start;
+                        if (uuid_length >= UUID_SIZE) {
+                            uuid_length = UUID_SIZE - 1;
+                        }
+                        memcpy(message->mu[j].uuid, buffer + (inner + 1)->start, uuid_length);
+                        message->mu[j].uuid[uuid_length] = '\0';
                         i++;
                     } else if (jsoneq(buffer, inner, "uri") == 0) {
                         char uri_buffer[(inner + 1)->end - (inner + 1)->start];

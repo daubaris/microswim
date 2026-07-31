@@ -129,6 +129,9 @@ static microswim_decoder_status_t microswim_decode_updates(microswim_message_t* 
             memcpy(array_key, cbor_string_handle(array_pair.key), array_key_length);
             if (strncmp(array_key, "uuid", array_key_length) == 0) {
                 size_t uuid_length = cbor_string_length(array_pair.value);
+                if (uuid_length >= UUID_SIZE) {
+                    uuid_length = UUID_SIZE - 1;
+                }
                 memcpy(message->mu[j].uuid, cbor_string_handle(array_pair.value), uuid_length);
                 message->mu[j].uuid[uuid_length] = '\0';
             } else if (strncmp(array_key, "uri", array_key_length) == 0) {
@@ -156,6 +159,9 @@ static microswim_decoder_status_t
         message->type = (microswim_message_type_t)value;
     } else if (strncmp(key, "uuid", key_length) == 0) {
         size_t length = cbor_string_length(pair.value);
+        if (length >= UUID_SIZE) {
+            length = UUID_SIZE - 1;
+        }
         memcpy(message->uuid, cbor_string_handle(pair.value), length);
         message->uuid[length] = '\0';
     } else if (strncmp(key, "uri", key_length) == 0) {
